@@ -1,0 +1,28 @@
+{
+  "name": "rerencangan-hermes",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A 3D virtual office that shows Hermes agent status at a glance. Unofficial.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "@types/three": "0.186.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.1",
+    "vitest": "5.0.3"
+  }
+}
