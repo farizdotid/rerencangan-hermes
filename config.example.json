@@ -1,0 +1,8 @@
+{
+  "port": 9600,
+  "agents": [
+    { "id": "default", "displayName": "default" },
+    { "id": "writer", "displayName": "writer" },
+    { "id": "research", "displayName": "research" }
+  ]
+}
