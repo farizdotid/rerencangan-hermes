@@ -91,10 +91,3 @@ export class DemoGenerator {
     return this.minInterval + this.rng() * (this.maxInterval - this.minInterval);
   }
 }
-
-/** Generic agents shown in demo mode (same as config.example.json). */
-export const DEMO_AGENTS = [
-  { id: 'default', displayName: 'default' },
-  { id: 'writer', displayName: 'writer' },
-  { id: 'research', displayName: 'research' },
-] as const;

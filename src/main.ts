@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import { Crew } from './avatar/Crew';
-import { DEMO_AGENTS, DemoGenerator } from './data/demo';
-import type { AgentState } from './data/types';
+import { StatusClient, type ConnectionStatus } from './data/client';
+import { displayStates, rosterKey } from './data/present';
+import type { AgentState, Snapshot } from './data/types';
 import { IsoView } from './scene/camera';
 import { DEFAULT_LAYOUT, validateLayout } from './scene/layout';
 import { buildOffice } from './scene/office';
 import { PALETTE } from './scene/palette';
 import { clampPixelRatio } from './scene/pixelRatio';
+import { ConnectionIndicator } from './ui/connectionIndicator';
 import { installDevControls, type DevCommand } from './ui/devControls';
 import { FpsMeter } from './ui/fpsMeter';
 import './style.css';
@@ -32,19 +34,62 @@ const view = new IsoView(DEFAULT_LAYOUT.room, container.clientWidth / container.
 const office = buildOffice(DEFAULT_LAYOUT);
 scene.add(office.root);
 
-const crew = new Crew(DEMO_AGENTS, office.desks);
-const demo = new DemoGenerator(crew.ids, 0);
+/** How long the server may be unreachable before avatars stop trusting the last snapshot. */
+const DISCONNECT_GRACE_MS = 10_000;
 
-/** State forced from the dev keyboard; null means demo data drives the avatars. */
+let crew: Crew | null = null;
+let roster = '';
+let latest: Snapshot | null = null;
+let stale = false;
+let staleTimer: ReturnType<typeof setTimeout> | null = null;
+/** State forced from the dev keyboard; null means server data drives the avatars. */
 let forced: AgentState | null = null;
+
+function syncStates(): void {
+  if (!crew || !latest || forced) return;
+  for (const { id, state } of displayStates(latest, { stale })) crew.setState(id, state);
+}
+
+function onSnapshot(snapshot: Snapshot): void {
+  latest = snapshot;
+  const key = rosterKey(snapshot.agents);
+  if (key !== roster) {
+    crew?.dispose();
+    crew = new Crew(snapshot.agents, office.desks);
+    roster = key;
+    if (forced) crew.setAll(forced);
+  }
+  syncStates();
+}
+
+const indicator = new ConnectionIndicator(container);
+
+function onStatus(status: ConnectionStatus): void {
+  indicator.set(status);
+  if (status === 'connected') {
+    if (staleTimer) clearTimeout(staleTimer);
+    staleTimer = null;
+    stale = false;
+    syncStates();
+  } else if (!staleTimer && !stale) {
+    staleTimer = setTimeout(() => {
+      staleTimer = null;
+      stale = true;
+      syncStates();
+    }, DISCONNECT_GRACE_MS);
+  }
+}
+
+const client = new StatusClient({ onSnapshot, onStatus });
+client.start();
 
 function onDevCommand(cmd: DevCommand): void {
   if (cmd.kind === 'force') {
     forced = cmd.state;
-    crew.setAll(cmd.state);
+    crew?.setAll(cmd.state);
   } else {
     forced = null;
-    for (const { id, state } of demo.snapshot()) crew.setState(id, state);
+    syncStates();
   }
 }
 
@@ -60,14 +105,9 @@ function frame(time: number): void {
   const dt = Math.min(timer.getDelta(), MAX_DT);
   const t = timer.getElapsed();
 
-  const changes = demo.tick(t);
-  if (forced === null) {
-    for (const { id, state } of changes) crew.setState(id, state);
-  }
-
   view.update();
   office.update(t);
-  crew.update(dt, t);
+  crew?.update(dt, t);
   renderer.render(scene, view.camera);
   fps?.tick();
 }
@@ -96,7 +136,14 @@ renderer.setAnimationLoop(frame);
 
 // Debug handle for dev tooling (inspecting renderer.info); not in production builds.
 if (import.meta.env.DEV) {
-  Object.assign(window, { __rerencangan: { renderer, crew } });
+  Object.assign(window, {
+    __rerencangan: {
+      renderer,
+      get crew() {
+        return crew;
+      },
+    },
+  });
 }
 
 // Clean up GPU resources when Vite hot-reloads this module.
@@ -106,8 +153,11 @@ if (import.meta.hot) {
     window.removeEventListener('resize', onResize);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     removeDevControls?.();
+    client.stop();
+    if (staleTimer) clearTimeout(staleTimer);
+    indicator.dispose();
     view.dispose();
-    crew.dispose();
+    crew?.dispose();
     office.dispose();
     renderer.dispose();
     renderer.domElement.remove();
