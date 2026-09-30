@@ -30,3 +30,15 @@ body {
   font: 12px/1.4 ui-monospace, monospace;
   pointer-events: none;
 }
+
+.dev-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.45);
+  color: #fff;
+  font: 12px/1.4 ui-monospace, monospace;
+  pointer-events: none;
+}

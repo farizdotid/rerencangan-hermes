@@ -9,7 +9,7 @@ failing ones raise an alarm. *Rerencangan* means "friends" in Sundanese.
 > or maintained by Nous Research or the authors of Hermes Agent. "Hermes" here
 > only refers to the agent being monitored.
 
-**Status:** early development (Phase 1: static office scene). See [`PRD.md`](./PRD.md) for
+**Status:** early development (Phase 2: avatars with demo data). See [`PRD.md`](./PRD.md) for
 the full plan.
 
 ## Requirements
@@ -25,7 +25,9 @@ npm run dev        # http://127.0.0.1:5173
 ```
 
 In the browser: drag to orbit (limited range), scroll to zoom. Panning is disabled.
-In dev mode a small FPS counter shows in the top-left corner.
+In dev mode a small FPS counter shows in the top-left corner, and keys
+`1`–`5` force every agent into `idle`, `working`, `error`, `celebrating`, or
+`offline`; `0` returns to random demo data.
 
 Other scripts:
 
