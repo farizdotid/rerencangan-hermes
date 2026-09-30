@@ -24,7 +24,8 @@ export const MAX_INTERVAL_MS = 10_000;
 /**
  * Read-only collector: polls allowlisted Hermes commands and turns their
  * output into snapshots. Polls never overlap; the last snapshot is cached
- * and served until the next poll completes.
+ * and served until the next poll completes. Every completed poll is
+ * broadcast, so clients always know how fresh the data is.
  */
 export class HermesSource implements StatusSource {
   private readonly agents: readonly AgentConfig[];
@@ -37,7 +38,6 @@ export class HermesSource implements StatusSource {
   private readonly lastError = new Map<string, string>();
 
   private current: Snapshot;
-  private currentKey = '';
   private timer: NodeJS.Timeout | null = null;
   private inFlight: Promise<void> | null = null;
   private abort: AbortController | null = null;
@@ -137,12 +137,7 @@ export class HermesSource implements StatusSource {
     if (status?.heartbeatAgeSeconds !== undefined) gateway.heartbeatAgeSeconds = status.heartbeatAgeSeconds;
     const agents = facts.map((f) => toAgentStatus(f, now));
 
-    // heartbeatAgeSeconds changes every poll; leave it out of change detection.
-    const key = JSON.stringify([gateway.running, agents]);
     this.current = { generatedAt: new Date(now).toISOString(), gateway, agents };
-    if (key !== this.currentKey) {
-      this.currentKey = key;
-      for (const l of this.listeners) l(this.current);
-    }
+    for (const l of this.listeners) l(this.current);
   }
 }
