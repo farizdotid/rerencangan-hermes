@@ -6,7 +6,7 @@ const LABELS: Record<ConnectionStatus, string> = {
   reconnecting: 'Menyambung ulang…',
 };
 
-/** Small pill in the top-right corner showing the server connection. */
+/** Small pill showing the server connection. */
 export class ConnectionIndicator {
   private readonly el = document.createElement('div');
   private readonly text = document.createElement('span');
