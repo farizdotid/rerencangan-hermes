@@ -76,7 +76,8 @@ function refreshUi(): void {
     return;
   }
   const shownState = shown.find((s) => s.id === agent.id)?.state ?? agent.state;
-  panel.show(describeAgent(agent, { shownState, gatewayRunning: running, stale, now }));
+  const sleeping = crew?.isSleeping(agent.id) ?? false;
+  panel.show(describeAgent(agent, { shownState, gatewayRunning: running, stale, now, sleeping }));
 }
 
 function select(id: string | null): void {
@@ -99,7 +100,7 @@ function onSnapshot(snapshot: Snapshot): void {
   const key = rosterKey(snapshot.agents);
   if (key !== roster) {
     crew?.dispose();
-    crew = new Crew(snapshot.agents, office.desks);
+    crew = new Crew(snapshot.agents, office.desks, office.beds);
     roster = key;
     if (forced) crew.setAll(forced);
     crew.setSelected(selectedId);
@@ -143,6 +144,9 @@ function onDevCommand(cmd: DevCommand): void {
   if (cmd.kind === 'force') {
     forced = cmd.state;
     crew?.setAll(cmd.state);
+  } else if (cmd.kind === 'nap') {
+    forced = 'idle';
+    crew?.napAll();
   } else {
     forced = null;
     syncStates();
