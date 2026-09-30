@@ -9,7 +9,7 @@ failing ones raise an alarm. *Rerencangan* means "friends" in Sundanese.
 > or maintained by Nous Research or the authors of Hermes Agent. "Hermes" here
 > only refers to the agent being monitored.
 
-**Status:** early development (Phase 3: demo server with live updates). See [`PRD.md`](./PRD.md) for
+**Status:** early development (Phase 4: read-only Hermes collector, pending CLI verification). See [`PRD.md`](./PRD.md) for
 the full plan.
 
 ## Requirements
@@ -73,8 +73,25 @@ Private settings never go into git.
 Both `config.local.json` and `.env` are git-ignored. Without
 `config.local.json`, the generic profiles from `config.example.json` are used.
 
-`MODE=demo` (default) shows fake data and never touches Hermes. `MODE=real`
-(the read-only Hermes collector) is not implemented yet.
+`MODE=demo` (default) shows fake data and never touches Hermes.
+
+`MODE=real` polls the Hermes CLI every 7 seconds, read-only. It is **locked**
+for now: the server refuses to start in real mode until the CLI syntax has
+been verified against `hermes --help` on the target machine. Set `HERMES_BIN`
+to an absolute path if `hermes` is not on the server's `PATH`.
+
+Real mode runs only these commands (`server/sources/allowlist.ts`):
+
+| Command | Used for |
+|---|---|
+| `hermes cron status` | Gateway running, heartbeat age |
+| `hermes cron list` (per profile) | Running job, last run, next run, job count |
+| `hermes sessions list` (per profile) | Active sessions (not used yet) |
+
+State rules, in priority order: gateway not running → `offline`; a failed
+run in the last 30 minutes → `error`; a running job → `working`; a
+successful run in the last 2 minutes → `celebrating`; otherwise `idle`.
+Output that cannot be understood shows `idle` with an "unknown" flag.
 
 ## Security model
 
@@ -82,7 +99,9 @@ Both `config.local.json` and `.env` are git-ignored. Without
   never runs commands that change Hermes state. There are no buttons to start,
   stop, or edit agents or jobs.
 - **Command allowlist.** Only explicitly listed Hermes CLI commands are run,
-  via `execFile` (no shell), with a timeout and output size limit.
+  via `execFile` (no shell), with a timeout, an output size limit, stdin
+  closed, and a minimal environment (no tokens or keys from the server's own
+  environment are passed on). Profile ids are validated before use.
 - **Status and numbers only.** The browser receives state, job name,
   timestamps, and counts. Never prompts, session content, or log lines.
 - **Untrusted input.** CLI output is parsed defensively, escaped before

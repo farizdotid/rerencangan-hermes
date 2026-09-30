@@ -3,6 +3,10 @@ import { resolve } from 'node:path';
 import { createApp } from './app';
 import { ConfigError, loadConfig } from './config';
 import { DemoSource } from './demo';
+import type { StatusSource } from './source';
+import { CLI_SYNTAX_VERIFIED } from './sources/allowlist';
+import { runHermes } from './sources/hermesCli';
+import { HermesSource } from './sources/hermesSource';
 import { SseHub } from './sse';
 
 const rootDir = resolve(import.meta.dirname, '..');
@@ -23,11 +27,20 @@ try {
   throw err;
 }
 
+let source: StatusSource;
 if (config.mode === 'real') {
-  fail('MODE=real (Hermes CLI collector) is not implemented yet. Use MODE=demo for now.');
+  if (!CLI_SYNTAX_VERIFIED) {
+    fail(
+      'MODE=real is locked until the Hermes CLI syntax (profile flag placement) has been verified ' +
+        'against `hermes --help` on the target machine. Use MODE=demo for now.',
+    );
+  }
+  const bin = config.hermesBin;
+  source = new HermesSource(config.agents, (key, profile, signal) => runHermes(key, profile, { bin, signal }));
+} else {
+  source = new DemoSource(config.agents);
 }
 
-const source = new DemoSource(config.agents);
 const hub = new SseHub();
 source.onChange((snapshot) => hub.broadcast('snapshot', snapshot));
 
