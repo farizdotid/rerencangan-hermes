@@ -24,6 +24,10 @@ export const DEMO_STATE_WEIGHTS: Readonly<Record<AgentState, number>> = {
 export interface DemoOptions {
   minIntervalSeconds?: number;
   maxIntervalSeconds?: number;
+  /** Chance that an idle spell lasts long enough for the agent to take a nap. */
+  longIdleChance?: number;
+  /** Length of such a long idle spell, in seconds. */
+  longIdleSeconds?: readonly [number, number];
   rng?: () => number;
 }
 
@@ -52,6 +56,8 @@ export class DemoGenerator {
   private readonly rng: () => number;
   private readonly minInterval: number;
   private readonly maxInterval: number;
+  private readonly longIdleChance: number;
+  private readonly longIdle: readonly [number, number];
   private readonly states = new Map<string, AgentState>();
   private readonly nextAt = new Map<string, number>();
 
@@ -59,6 +65,8 @@ export class DemoGenerator {
     this.rng = opts.rng ?? Math.random;
     this.minInterval = opts.minIntervalSeconds ?? 2;
     this.maxInterval = opts.maxIntervalSeconds ?? 6;
+    this.longIdleChance = opts.longIdleChance ?? 0.3;
+    this.longIdle = opts.longIdleSeconds ?? [200, 260];
     for (const id of ids) {
       this.states.set(id, 'idle');
       this.nextAt.set(id, nowSeconds + this.interval());
@@ -81,7 +89,8 @@ export class DemoGenerator {
       if (nowSeconds < at) continue;
       const state = pickState(this.states.get(id) ?? 'idle', this.rng);
       this.states.set(id, state);
-      this.nextAt.set(id, nowSeconds + this.interval());
+      const long = state === 'idle' && this.rng() < this.longIdleChance;
+      this.nextAt.set(id, nowSeconds + (long ? this.longInterval() : this.interval()));
       changes.push({ id, state });
     }
     return changes;
@@ -89,5 +98,10 @@ export class DemoGenerator {
 
   private interval(): number {
     return this.minInterval + this.rng() * (this.maxInterval - this.minInterval);
+  }
+
+  private longInterval(): number {
+    const [min, max] = this.longIdle;
+    return min + this.rng() * (max - min);
   }
 }
