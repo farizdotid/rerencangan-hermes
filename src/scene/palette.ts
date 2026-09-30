@@ -16,3 +16,6 @@ export const PALETTE = {
   ledOk: 0x3ddc84,
   ledError: 0xff4d4f,
 } as const;
+
+/** Soft body colors assigned to agents in order. */
+export const AGENT_COLORS = [0x5b8def, 0xf29e4c, 0x5cc8a8, 0xe57ea8, 0x9b87f5, 0xe8c547] as const;
