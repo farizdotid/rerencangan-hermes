@@ -1,47 +1,48 @@
 import * as THREE from 'three';
+import { IsoView } from './scene/camera';
+import { DEFAULT_LAYOUT, validateLayout } from './scene/layout';
+import { buildOffice } from './scene/office';
+import { PALETTE } from './scene/palette';
 import { clampPixelRatio } from './scene/pixelRatio';
+import { FpsMeter } from './ui/fpsMeter';
 import './style.css';
 
 const container = document.getElementById('app');
 if (!container) throw new Error('#app container not found');
 
+const layoutErrors = validateLayout(DEFAULT_LAYOUT);
+if (layoutErrors.length > 0) throw new Error(`Invalid office layout: ${layoutErrors.join('; ')}`);
+
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(clampPixelRatio(window.devicePixelRatio));
 renderer.setSize(container.clientWidth, container.clientHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 container.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xeef3fb);
+scene.background = new THREE.Color(PALETTE.background);
 
-const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
-camera.position.set(2.5, 2, 3.5);
-camera.lookAt(0, 0, 0);
+const view = new IsoView(DEFAULT_LAYOUT.room, container.clientWidth / container.clientHeight, renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-const sun = new THREE.DirectionalLight(0xffffff, 1.4);
-sun.position.set(3, 5, 2);
-scene.add(sun);
+const office = buildOffice(DEFAULT_LAYOUT);
+scene.add(office.root);
 
-const cube = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1, 1),
-  new THREE.MeshStandardMaterial({ color: 0x4a7fd6, roughness: 0.6 }),
-);
-scene.add(cube);
-
+const fps = import.meta.env.DEV ? new FpsMeter(container) : null;
 const timer = new THREE.Timer();
 
 function frame(time: number): void {
-  const dt = timer.update(time).getDelta();
-  cube.rotation.x += dt * 0.5;
-  cube.rotation.y += dt * 0.8;
-  renderer.render(scene, camera);
+  timer.update(time);
+  view.update();
+  office.update(timer.getElapsed());
+  renderer.render(scene, view.camera);
+  fps?.tick();
 }
 
 function onResize(): void {
   if (!container) return;
   const { clientWidth: w, clientHeight: h } = container;
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
+  view.resize(w / h);
   renderer.setPixelRatio(clampPixelRatio(window.devicePixelRatio));
   renderer.setSize(w, h);
 }
@@ -51,7 +52,7 @@ function onVisibilityChange(): void {
   if (document.hidden) {
     renderer.setAnimationLoop(null);
   } else {
-    timer.reset(); // discard time spent hidden
+    fps?.reset();
     renderer.setAnimationLoop(frame);
   }
 }
@@ -59,3 +60,17 @@ function onVisibilityChange(): void {
 window.addEventListener('resize', onResize);
 document.addEventListener('visibilitychange', onVisibilityChange);
 renderer.setAnimationLoop(frame);
+
+// Clean up GPU resources when Vite hot-reloads this module.
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    renderer.setAnimationLoop(null);
+    window.removeEventListener('resize', onResize);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    view.dispose();
+    office.dispose();
+    renderer.dispose();
+    renderer.domElement.remove();
+    container.querySelector('.fps-meter')?.remove();
+  });
+}
