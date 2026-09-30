@@ -13,7 +13,9 @@ Include steps to reproduce and the affected version or commit.
 
 Rerencangan Hermes is a **local, single-user** tool.
 
-- The server binds to `127.0.0.1` by default. Keep it that way.
+- The server binds to `127.0.0.1` by default and refuses non-loopback
+  addresses. Requests with a non-loopback `Host` header are rejected, which
+  blocks DNS-rebinding attacks from web pages.
 - For remote access, use an SSH tunnel. **Never expose it to the internet**
   (no public bind, no reverse proxy, no port forwarding on a router).
 - There is no authentication by design; anyone who can reach the port can
