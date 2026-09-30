@@ -1,0 +1,7 @@
+  Scheduler host: the host gateway (PID 12345) serving profiles default, writer, research
+✓ Gateway is running — cron jobs will fire automatically
+  PID: 12345
+  Ticker heartbeat: 9s ago
+
+  1 active job(s)
+  Next run: 2026-10-01T23:00:00+07:00
