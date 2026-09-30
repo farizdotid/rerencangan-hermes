@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { isIP } from 'node:net';
-import { resolve } from 'node:path';
+import { isAbsolute, resolve } from 'node:path';
 
 export type Mode = 'demo' | 'real';
 
@@ -13,6 +13,8 @@ export interface ServerConfig {
   host: string;
   port: number;
   mode: Mode;
+  /** Hermes executable for real mode: "hermes" on PATH, or an absolute path. */
+  hermesBin: string;
   agents: AgentConfig[];
   /** Which file the agents came from, for the startup log. */
   configFile: string;
@@ -26,7 +28,7 @@ export const DEFAULT_PORT = 9600;
  * to a strict charset: letters, digits, dot, dash, underscore, max 32 chars,
  * and they must not start with a dash (it would read as a flag).
  */
-const PROFILE_ID = /^[A-Za-z0-9_][A-Za-z0-9._-]{0,31}$/;
+export const PROFILE_ID = /^[A-Za-z0-9_][A-Za-z0-9._-]{0,31}$/;
 const MAX_AGENTS = 32;
 const MAX_DISPLAY_NAME = 40;
 
@@ -121,5 +123,10 @@ export function loadConfig({ env = process.env, rootDir }: LoadOptions): ServerC
   const modeRaw = env.MODE?.trim() || 'demo';
   if (modeRaw !== 'demo' && modeRaw !== 'real') throw new ConfigError(`MODE must be "demo" or "real"`);
 
-  return { host, port, mode: modeRaw, agents: file.agents, configFile: label };
+  const hermesBin = env.HERMES_BIN?.trim() || 'hermes';
+  if (hermesBin !== 'hermes' && !isAbsolute(hermesBin)) {
+    throw new ConfigError('HERMES_BIN must be an absolute path to the hermes executable');
+  }
+
+  return { host, port, mode: modeRaw, hermesBin, agents: file.agents, configFile: label };
 }

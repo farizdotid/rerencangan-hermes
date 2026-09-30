@@ -20,6 +20,7 @@ describe('loadConfig', () => {
       host: '127.0.0.1',
       port: 9600,
       mode: 'demo',
+      hermesBin: 'hermes',
       configFile: 'config.example.json',
       agents: [
         { id: 'default', displayName: 'default' },
@@ -47,6 +48,15 @@ describe('loadConfig', () => {
       expect(() => loadConfig({ rootDir: dir, env: { HOST } })).toThrow(ConfigError);
     }
     expect(loadConfig({ rootDir: dir, env: { HOST: 'localhost' } }).host).toBe('localhost');
+  });
+
+  it('accepts only "hermes" or an absolute path as HERMES_BIN', () => {
+    expect(loadConfig({ rootDir: dir, env: { HERMES_BIN: '/opt/hermes/bin/hermes' } }).hermesBin).toBe(
+      '/opt/hermes/bin/hermes',
+    );
+    for (const HERMES_BIN of ['./hermes', 'bin/hermes', 'hermes --yes']) {
+      expect(() => loadConfig({ rootDir: dir, env: { HERMES_BIN } })).toThrow(ConfigError);
+    }
   });
 
   it('rejects bad mode and broken JSON', () => {
