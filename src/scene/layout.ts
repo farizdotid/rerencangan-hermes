@@ -26,12 +26,15 @@ export interface Slot {
 export interface OfficeLayout {
   room: RoomSpec;
   desks: Slot[];
+  /** One bed per desk, in the same order; agents nap here after a long idle. */
+  beds: Slot[];
   serverRack: Slot;
 }
 
 /** Footprint half-sizes used for bounds and overlap checks. */
 export const DESK_FOOTPRINT = { halfWidth: 1.0, halfDepth: 1.1 } as const;
 export const RACK_FOOTPRINT = { halfWidth: 0.45, halfDepth: 0.4 } as const;
+export const BED_FOOTPRINT = { halfWidth: 0.6, halfDepth: 1.1 } as const;
 
 export const DEFAULT_LAYOUT: OfficeLayout = {
   room: { width: 14, depth: 10, wallHeight: 3, wallThickness: 0.2 },
@@ -39,6 +42,12 @@ export const DEFAULT_LAYOUT: OfficeLayout = {
     { id: 'desk-1', x: -2.5, z: -2.2, rotationY: 0 },
     { id: 'desk-2', x: 0.8, z: -2.2, rotationY: 0 },
     { id: 'desk-3', x: 4.1, z: -2.2, rotationY: 0 },
+  ],
+  // Along the left wall, pillow towards the wall, foot end facing the room.
+  beds: [
+    { id: 'bed-1', x: -5.85, z: 0.4, rotationY: Math.PI / 2 },
+    { id: 'bed-2', x: -5.85, z: 1.85, rotationY: Math.PI / 2 },
+    { id: 'bed-3', x: -5.85, z: 3.3, rotationY: Math.PI / 2 },
   ],
   serverRack: { id: 'rack', x: -6.2, z: -4.2, rotationY: Math.PI / 2 },
 };
@@ -74,7 +83,7 @@ export function validateLayout(layout: OfficeLayout): string[] {
     return errors;
   }
 
-  const slots = [...layout.desks, layout.serverRack];
+  const slots = [...layout.desks, ...layout.beds, layout.serverRack];
   const allFinite = slots.every(
     (s) => Number.isFinite(s.x) && Number.isFinite(s.z) && Number.isFinite(s.rotationY),
   );
@@ -91,6 +100,7 @@ export function validateLayout(layout: OfficeLayout): string[] {
 
   const boxes = [
     ...layout.desks.map((d) => footprintBox(d, DESK_FOOTPRINT.halfWidth, DESK_FOOTPRINT.halfDepth)),
+    ...layout.beds.map((b) => footprintBox(b, BED_FOOTPRINT.halfWidth, BED_FOOTPRINT.halfDepth)),
     footprintBox(layout.serverRack, RACK_FOOTPRINT.halfWidth, RACK_FOOTPRINT.halfDepth),
   ];
 

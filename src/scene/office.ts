@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createBed, createBedKit, type Bed } from './bed';
 import { createDesk, createDeskKit, type Desk } from './desk';
 import type { OfficeLayout } from './layout';
 import { createLights } from './lights';
@@ -8,6 +9,7 @@ import { ServerRack } from './serverRack';
 export interface Office {
   root: THREE.Group;
   desks: Desk[];
+  beds: Bed[];
   rack: ServerRack;
   update(timeSeconds: number): void;
   dispose(): void;
@@ -25,12 +27,17 @@ export function buildOffice(layout: OfficeLayout): Office {
   const desks = layout.desks.map((slot) => createDesk(slot, kit));
   for (const desk of desks) root.add(desk.group);
 
+  const bedKit = createBedKit();
+  const beds = layout.beds.map((slot) => createBed(slot, bedKit));
+  for (const bed of beds) root.add(bed.group);
+
   const rack = new ServerRack(layout.serverRack);
   root.add(rack.group);
 
   return {
     root,
     desks,
+    beds,
     rack,
     update(timeSeconds) {
       rack.update(timeSeconds);

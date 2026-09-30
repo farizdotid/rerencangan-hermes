@@ -15,6 +15,10 @@ export const PALETTE = {
   rackPanel: 0x2a303c,
   ledOk: 0x3ddc84,
   ledError: 0xff4d4f,
+  bedFrame: 0xc9a47e,
+  mattress: 0xf4f6fa,
+  pillow: 0xffffff,
+  blanket: 0x9dbbea,
 } as const;
 
 /** Soft body colors assigned to agents in order. */
