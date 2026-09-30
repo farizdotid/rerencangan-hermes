@@ -57,6 +57,9 @@ export class AgentAvatar {
   private readonly halo: THREE.Sprite;
   private readonly zzz: THREE.Sprite;
   private readonly label: THREE.Sprite;
+  private readonly ring: THREE.Mesh;
+  private readonly ringMat: THREE.MeshBasicMaterial;
+  private selected = false;
 
   private readonly bodyMat: THREE.MeshStandardMaterial;
   private readonly skinMat: THREE.MeshStandardMaterial;
@@ -81,6 +84,7 @@ export class AgentAvatar {
     this.beaconMat = new THREE.MeshBasicMaterial({ color: PALETTE.ledError, transparent: true });
 
     this.group.name = `avatar:${opts.id}`;
+    this.group.userData.agentId = opts.id;
     this.group.position.copy(opts.desk.seatPosition);
     opts.desk.group.add(this.group);
 
@@ -133,6 +137,14 @@ export class AgentAvatar {
     this.label.material.depthTest = false;
     this.group.add(this.label);
 
+    // Selection ring on the floor around the chair; hidden until selected.
+    this.ringMat = new THREE.MeshBasicMaterial({ color: PALETTE.chairSeat, transparent: true, depthWrite: false });
+    this.ring = new THREE.Mesh(this.track(new THREE.RingGeometry(0.46, 0.56, 40)), this.ringMat);
+    this.ring.rotation.x = -Math.PI / 2;
+    this.ring.position.y = 0.02 - opts.desk.seatPosition.y;
+    this.ring.visible = false;
+    this.group.add(this.ring);
+
     this.update(0, 0);
   }
 
@@ -142,6 +154,11 @@ export class AgentAvatar {
 
   setState(state: AgentState): void {
     this.machine.set(state);
+  }
+
+  setSelected(selected: boolean): void {
+    this.selected = selected;
+    this.ring.visible = selected;
   }
 
   update(dtSeconds: number, timeSeconds: number): void {
@@ -172,6 +189,7 @@ export class AgentAvatar {
     this.zzz.material.opacity = p.zzz * Math.min(1, (1 - drift) * 2.5);
 
     this.label.material.opacity = 0.55 + 0.45 * ((p.dim - 0.45) / 0.55);
+    if (this.selected) this.ringMat.opacity = 0.65 + 0.3 * Math.sin(timeSeconds * 3);
 
     const screen = this.desk.screen;
     screen.emissive
@@ -184,7 +202,7 @@ export class AgentAvatar {
   dispose(): void {
     this.group.removeFromParent();
     for (const g of this.geometries) g.dispose();
-    for (const m of [this.bodyMat, this.skinMat, this.eyeMat, this.beaconMat]) m.dispose();
+    for (const m of [this.bodyMat, this.skinMat, this.eyeMat, this.beaconMat, this.ringMat]) m.dispose();
     for (const s of [this.halo, this.zzz, this.label]) disposeSprite(s);
     this.desk.screen.emissive.setRGB(0, 0, 0);
   }

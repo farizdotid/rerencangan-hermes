@@ -1,3 +1,4 @@
+import type * as THREE from 'three';
 import type { AgentState } from '../data/types';
 import type { Desk } from '../scene/desk';
 import { AGENT_COLORS } from '../scene/palette';
@@ -33,6 +34,28 @@ export class Crew {
 
   setState(id: string, state: AgentState): void {
     this.avatars.get(id)?.setState(state);
+  }
+
+  has(id: string): boolean {
+    return this.avatars.has(id);
+  }
+
+  /** Root objects to raycast against for click selection. */
+  pickTargets(): THREE.Object3D[] {
+    return [...this.avatars.values()].map((a) => a.group);
+  }
+
+  /** Agent id for a raycast hit anywhere inside an avatar. */
+  idFromObject(object: THREE.Object3D): string | null {
+    for (let o: THREE.Object3D | null = object; o; o = o.parent) {
+      const id: unknown = o.userData.agentId;
+      if (typeof id === 'string' && this.avatars.has(id)) return id;
+    }
+    return null;
+  }
+
+  setSelected(id: string | null): void {
+    for (const [aid, a] of this.avatars) a.setSelected(aid === id);
   }
 
   setAll(state: AgentState): void {

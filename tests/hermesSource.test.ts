@@ -113,7 +113,7 @@ describe('HermesSource', () => {
     expect(maxActive).toBe(1);
   });
 
-  it('notifies only when something visible changes', async () => {
+  it('broadcasts every completed poll with a fresh timestamp', async () => {
     let list = LIST;
     let t = NOW;
     const { run } = runnerFrom((key) => ok(key === 'cron-status' ? STATUS : list));
@@ -122,22 +122,20 @@ describe('HermesSource', () => {
     src.onChange(listener);
 
     await src.poll();
-    expect(listener).toHaveBeenCalledTimes(1);
     t += 7000;
     await src.poll();
-    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener.mock.calls[1]![0].generatedAt).toBe(new Date(t).toISOString());
 
     // The run finishes (assumed wording): both agents now celebrate.
     list = LIST.replace(/Execution: running.*$/m, 'Execution: success');
     t += 7000;
     await src.poll();
-    expect(listener).toHaveBeenCalledTimes(2);
     expect(src.snapshot().agents[0]!.state).toBe('celebrating');
 
-    // After the celebrate window it settles to idle, which is a change again.
+    // After the celebrate window it settles to idle.
     t += 3 * 60_000;
     await src.poll();
-    expect(listener).toHaveBeenCalledTimes(3);
     expect(src.snapshot().agents[0]!.state).toBe('idle');
   });
 

@@ -6,6 +6,8 @@ import type { StatusSource } from './source';
 export interface DemoSourceOptions extends DemoOptions {
   /** How often the generator is advanced. */
   tickMs?: number;
+  /** Re-send the snapshot at least this often, so clients can show how fresh it is. */
+  keepaliveMs?: number;
   /** Clock in milliseconds; injectable for tests. */
   now?: () => number;
 }
@@ -23,13 +25,16 @@ export class DemoSource implements StatusSource {
   private readonly memory = new Map<string, AgentMemory>();
   private readonly listeners = new Set<(s: Snapshot) => void>();
   private readonly tickMs: number;
+  private readonly keepaliveMs: number;
   private readonly now: () => number;
   private current: Snapshot;
+  private lastEmitAt: number;
   private timer: NodeJS.Timeout | null = null;
 
   constructor(agents: readonly AgentConfig[], opts: DemoSourceOptions = {}) {
     this.agents = agents;
     this.tickMs = opts.tickMs ?? 1000;
+    this.keepaliveMs = opts.keepaliveMs ?? 5000;
     this.now = opts.now ?? Date.now;
     this.generator = new DemoGenerator(
       agents.map((a) => a.id),
@@ -38,6 +43,7 @@ export class DemoSource implements StatusSource {
     );
     for (const a of agents) this.memory.set(a.id, {});
     this.current = this.build();
+    this.lastEmitAt = this.now();
   }
 
   snapshot(): Snapshot {
@@ -62,7 +68,10 @@ export class DemoSource implements StatusSource {
   /** Advances the generator once; exposed for tests. */
   tick(): void {
     const changes = this.generator.tick(this.now() / 1000);
-    if (changes.length === 0) return;
+    if (changes.length === 0) {
+      if (this.now() - this.lastEmitAt >= this.keepaliveMs) this.emit();
+      return;
+    }
     const at = new Date(this.now()).toISOString();
     for (const { id, state } of changes) {
       const mem = this.memory.get(id);
@@ -70,7 +79,12 @@ export class DemoSource implements StatusSource {
       if (state === 'celebrating') mem.lastRun = { status: 'success', at };
       if (state === 'error') mem.lastRun = { status: 'failed', at };
     }
+    this.emit();
+  }
+
+  private emit(): void {
     this.current = this.build();
+    this.lastEmitAt = this.now();
     for (const l of this.listeners) l(this.current);
   }
 

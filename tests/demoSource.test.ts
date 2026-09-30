@@ -43,11 +43,25 @@ describe('DemoSource', () => {
     expect(seen.size).toBe(5);
   });
 
-  it('does not notify when nothing changed', () => {
-    const src = new DemoSource(agents, { now: () => 0, rng: createRng(2) });
+  it('re-sends an unchanged snapshot only after the keepalive interval', () => {
+    let t = 0;
+    // Long generator intervals, so nothing changes and only the keepalive can fire.
+    const src = new DemoSource(agents, {
+      now: () => t,
+      rng: createRng(2),
+      keepaliveMs: 5000,
+      minIntervalSeconds: 100,
+      maxIntervalSeconds: 200,
+    });
     const listener = vi.fn();
     src.onChange(listener);
+    t = 1000;
     src.tick();
     expect(listener).not.toHaveBeenCalled();
+    t = 5000;
+    src.tick();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener.mock.calls[0]![0].generatedAt).toBe(new Date(5000).toISOString());
+    expect(listener.mock.calls[0]![0].agents.map((a: { state: string }) => a.state)).toEqual(['idle', 'idle']);
   });
 });
