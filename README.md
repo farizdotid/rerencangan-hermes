@@ -48,10 +48,12 @@ In the browser: drag to orbit (limited range), scroll to zoom. Panning is disabl
   job count. Close with ×, Esc, or a click on empty space.
 - **Server rack LEDs:** green when the gateway runs, red when it is stopped,
   amber when there is no fresh data.
+- **Naps:** an agent that stays idle for 3 minutes walks to its bed and
+  sleeps; it walks back to its desk as soon as a job runs, fails, or finishes.
 
 In dev mode a small FPS counter shows in the top-left corner, and keys
 `1`–`5` force every agent into `idle`, `working`, `error`, `celebrating`, or
-`offline`; `0` returns to server data.
+`offline`; `6` sends everyone to bed right away; `0` returns to server data.
 
 Other scripts:
 
