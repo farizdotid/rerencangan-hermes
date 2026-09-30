@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { displayStates, rosterKey } from '../src/data/present';
+import { countStates, displayStates, nextScheduledRun, rosterKey } from '../src/data/present';
 import type { Snapshot } from '../src/data/types';
 
 const snap = (running: boolean): Snapshot => ({
@@ -34,5 +34,30 @@ describe('rosterKey', () => {
     expect(rosterKey([{ id: 'a', displayName: 'A' }, { id: 'b', displayName: 'B' }])).toBe(base);
     expect(rosterKey([{ id: 'b', displayName: 'B' }, { id: 'a', displayName: 'A' }])).not.toBe(base);
     expect(rosterKey([{ id: 'a', displayName: 'A2' }, { id: 'b', displayName: 'B' }])).not.toBe(base);
+  });
+});
+
+describe('countStates', () => {
+  it('counts every state, including zeros', () => {
+    expect(countStates([{ state: 'working' }, { state: 'working' }, { state: 'error' }])).toEqual({
+      idle: 0,
+      working: 2,
+      error: 1,
+      celebrating: 0,
+      offline: 0,
+    });
+  });
+});
+
+describe('nextScheduledRun', () => {
+  it('picks the earliest run across agents, comparing real instants', () => {
+    const s = snap(true);
+    s.agents[0]!.nextRunAt = '2026-10-01T23:00:00+07:00'; // 16:00Z
+    s.agents[1]!.nextRunAt = '2026-10-01T15:30:00Z';
+    expect(nextScheduledRun(s)).toEqual({ at: '2026-10-01T15:30:00Z', agent: 'B' });
+  });
+
+  it('returns null when nothing is scheduled', () => {
+    expect(nextScheduledRun(snap(true))).toBeNull();
   });
 });
