@@ -1,0 +1,18 @@
+/** Soft, bright palette with a blue accent (PRD section 9). */
+export const PALETTE = {
+  background: 0xeef3fb,
+  floor: 0xd8dfea,
+  floorEdge: 0xc9d2df,
+  wall: 0xf8f6f2,
+  wallTrim: 0xc5d4ec,
+  deskTop: 0xdcc3a1,
+  deskLeg: 0x8e98a9,
+  monitorBody: 0x2e3647,
+  screenOff: 0x1b2230,
+  chairSeat: 0x4a7fd6,
+  chairBase: 0x5b6475,
+  rackBody: 0x3a4252,
+  rackPanel: 0x2a303c,
+  ledOk: 0x3ddc84,
+  ledError: 0xff4d4f,
+} as const;
