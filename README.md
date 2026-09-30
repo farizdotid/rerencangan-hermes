@@ -38,9 +38,16 @@ npm start          # UI + API on http://127.0.0.1:9600
 ```
 
 In the browser: drag to orbit (limited range), scroll to zoom. Panning is disabled.
-The pill in the top-right shows the server connection; the page reconnects
-by itself if the server restarts. If the server stays unreachable for more
-than 10 seconds, every agent is shown offline.
+
+- **Top-right card:** server connection, gateway state and heartbeat, how
+  many agents are in each state, the next scheduled job, and when data last
+  arrived. The page reconnects by itself if the server restarts; if the
+  server stays unreachable for more than 10 seconds, every agent is shown
+  offline.
+- **Click an agent** for details: state, current job, last run, next run, and
+  job count. Close with ×, Esc, or a click on empty space.
+- **Server rack LEDs:** green when the gateway runs, red when it is stopped,
+  amber when there is no fresh data.
 
 In dev mode a small FPS counter shows in the top-left corner, and keys
 `1`–`5` force every agent into `idle`, `working`, `error`, `celebrating`, or
