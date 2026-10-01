@@ -1,4 +1,4 @@
-/** Soft, bright palette with a blue accent (PRD section 9). */
+/** Soft, bright palette with a blue accent. */
 export const PALETTE = {
   background: 0xeef3fb,
   floor: 0xd8dfea,

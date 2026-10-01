@@ -3,14 +3,15 @@
 A 3D virtual office (Three.js) that shows the status of your
 Hermes Agent profiles at a glance.
 Each agent is a character: working agents type at their desk, idle ones relax,
-failing ones raise an alarm. *Rerencangan* means "friends" in Sundanese.
+failing ones raise an alarm, and agents idle for a while walk off for a nap.
+*Rerencangan* means "friends" in Sundanese.
 
 > **Unofficial project.** Rerencangan Hermes is not affiliated with, endorsed by,
 > or maintained by Nous Research or the authors of Hermes Agent. "Hermes" here
 > only refers to the agent being monitored.
 
-**Status:** early development (Phase 4: read-only Hermes collector). See [`PRD.md`](./PRD.md) for
-the full plan.
+**Status:** working, with a demo mode (fake data) and a read-only real mode
+that reads Hermes through its CLI. A small personal project; expect rough edges.
 
 ## Requirements
 
@@ -69,6 +70,26 @@ Other scripts:
 |-------------------|--------------------------------------------------------------|
 | `GET /api/agents` | Current snapshot as JSON                                     |
 | `GET /events`     | Server-Sent Events: `snapshot` on connect and on change, `ping` every 15 s |
+
+## Running on a server, viewing from your laptop
+
+The server has to run on the machine where Hermes runs, because real mode
+calls the `hermes` CLI there. It only listens on `127.0.0.1`, so you reach it
+through an SSH tunnel:
+
+```sh
+# On the server
+npm install
+npm run build
+MODE=real npm start
+
+# On your laptop
+ssh -L 9600:localhost:9600 user@your-server
+```
+
+Then open http://localhost:9600 on your laptop. The server stops when its SSH
+session ends; run it inside `tmux` or `screen`, or under a service manager,
+to keep it going. Prefer SSH keys over password login on the server.
 
 ## Configuration
 

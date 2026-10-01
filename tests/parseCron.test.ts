@@ -7,7 +7,7 @@ import { findIso, parseAgo, toLines } from '../server/sources/parse/text';
 
 const fixture = (name: string) => readFileSync(join(import.meta.dirname, '../server/sources/fixtures', name), 'utf8');
 
-describe('parseCronStatus with the appendix A fixture', () => {
+describe('parseCronStatus with the gateway-running fixture', () => {
   it('reads gateway state, heartbeat, job count, next run, and profiles', () => {
     expect(parseCronStatus(fixture('cron-status.running.txt'))).toEqual({
       recognized: true,
@@ -24,7 +24,7 @@ describe('parseCronStatus with the appendix A fixture', () => {
   });
 });
 
-describe('parseCronList with the appendix A fixture', () => {
+describe('parseCronList with the running-job fixture', () => {
   it('reads the profile and the running job', () => {
     expect(parseCronList(fixture('cron-list.running.txt'))).toEqual({
       recognized: true,

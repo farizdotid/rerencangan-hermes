@@ -1,7 +1,7 @@
 import { PROFILE_ID } from '../config';
 
 /**
- * The only Hermes commands this app may run (PRD section 6). All of them are
+ * The only Hermes commands this app may run. All of them are
  * read-only. Arguments are fixed here; nothing from the network or the
  * browser ever becomes an argument, and profile ids are validated again.
  */

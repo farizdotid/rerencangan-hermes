@@ -18,7 +18,7 @@ export interface HermesSourceOptions {
   fallback?: readonly AgentConfig[];
   /** Display names, order, and hidden flags from config.local.json. */
   overrides?: readonly AgentConfig[];
-  /** Poll interval; clamped to 5-10 s (PRD section 7, phase 4). */
+  /** Poll interval; clamped to 5-10 s. */
   intervalMs?: number;
   /** Re-read the profile list every this many polls. */
   discoverEvery?: number;

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-/** Local system fonts only; no web fonts are loaded (PRD section 0.5). */
+/** Local system fonts only; no web fonts are loaded and nothing is fetched at runtime. */
 const FONT_STACK = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const MAX_LABEL_CHARS = 24;
 
