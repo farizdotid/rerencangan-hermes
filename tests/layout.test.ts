@@ -39,7 +39,8 @@ describe('validateLayout', () => {
     // Rotated 90°, the desk's depth runs along X and pokes past the side wall.
     const halfW = DEFAULT_LAYOUT.room.width / 2;
     const slot = { id: 'r', x: -halfW + 1.05, z: 0, rotationY: Math.PI / 2 };
-    const noBeds = (desks: OfficeLayout['desks']) => ({ ...withDesks(desks), beds: [] });
+    const { bedroom: _bedroom, ...open } = DEFAULT_LAYOUT;
+    const noBeds = (desks: OfficeLayout['desks']): OfficeLayout => ({ ...open, desks, beds: [] });
     expect(validateLayout(noBeds([{ ...slot, rotationY: 0 }]))).toEqual([]);
     expect(validateLayout(noBeds([slot]))).toContain('slot "r" is outside the room');
   });
@@ -55,6 +56,23 @@ describe('validateLayout', () => {
 
   it('has one bed per desk in the default layout', () => {
     expect(DEFAULT_LAYOUT.beds).toHaveLength(DEFAULT_LAYOUT.desks.length);
+  });
+
+  it('checks the bedroom partition and its furniture', () => {
+    const bedroom = DEFAULT_LAYOUT.bedroom!;
+    const desk = DEFAULT_LAYOUT.desks[0]!;
+    const halfD = DEFAULT_LAYOUT.room.depth / 2;
+    expect(validateLayout(withDesks([{ ...desk, x: bedroom.partitionX }]))).toContain(`slot "${desk.id}" crosses the partition`);
+    expect(validateLayout({ ...DEFAULT_LAYOUT, bedroom: { ...bedroom, doorZ: halfD } })).toContain(
+      'bedroom doorway is outside the room',
+    );
+    expect(validateLayout({ ...DEFAULT_LAYOUT, bedroom: { ...bedroom, partitionX: 100 } })).toContain(
+      'bedroom partition is outside the room',
+    );
+    const stand = bedroom.nightstands[0]!;
+    expect(
+      validateLayout({ ...DEFAULT_LAYOUT, bedroom: { ...bedroom, nightstands: [{ ...stand, z: DEFAULT_LAYOUT.beds[0]!.z }] } }),
+    ).toContain(`slots "bed-1" and "${stand.id}" overlap`);
   });
 
   it('rejects non-finite coordinates and bad room sizes', () => {

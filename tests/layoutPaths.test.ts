@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { bedPlaces, deskPlaces } from '../src/avatar/route';
-import { BED_FOOTPRINT, DESK_FOOTPRINT, RACK_FOOTPRINT, createLayout, validateLayout, type Slot } from '../src/scene/layout';
+import {
+  BED_FOOTPRINT,
+  DESK_FOOTPRINT,
+  NIGHTSTAND_FOOTPRINT,
+  RACK_FOOTPRINT,
+  WARDROBE_FOOTPRINT,
+  createLayout,
+  validateLayout,
+  type OfficeLayout,
+  type Slot,
+} from '../src/scene/layout';
 
 interface Box {
   id: string;
@@ -43,23 +53,40 @@ function hits(ax: number, az: number, bx: number, bz: number, b: Box): boolean {
 }
 
 const SEAT = { x: 0, y: 0.53, z: 0.55 };
+/** Roughly half an avatar's width; it must clear the door posts by this much. */
+const AVATAR_RADIUS = 0.25;
+
+function walkPoints(l: OfficeLayout, i: number): { x: number; z: number }[] {
+  return [deskPlaces(l.desks[i]!, SEAT).standOut, ...(l.walkVia?.[i] ?? []), bedPlaces(l.beds[i]!).approach];
+}
 
 describe('createLayout', () => {
-  it('matches the hand-tuned three-agent layout', () => {
+  it('matches the three-agent layout', () => {
     const l = createLayout(3);
-    expect(l.room).toEqual({ width: 14, depth: 10, wallHeight: 3, wallThickness: 0.2 });
+    expect(l.room).toEqual({ width: 15, depth: 10, wallHeight: 3, wallThickness: 0.2 });
     expect(l.desks.map((d) => [d.x, d.z])).toEqual([
-      [-2.5, -2.2],
-      [expect.closeTo(0.8), -2.2],
-      [4.1, -2.2],
+      [expect.closeTo(-0.7), -2.2],
+      [expect.closeTo(2.6), -2.2],
+      [expect.closeTo(5.9), -2.2],
     ]);
     expect(l.beds.map((b) => [b.x, b.z])).toEqual([
-      [-5.85, expect.closeTo(0.4)],
-      [-5.85, expect.closeTo(1.85)],
-      [-5.85, expect.closeTo(3.3)],
+      [-6.35, expect.closeTo(-3.1)],
+      [-6.35, expect.closeTo(-1.2)],
+      [-6.35, expect.closeTo(0.7)],
     ]);
-    expect([l.serverRack.x, l.serverRack.z]).toEqual([-6.2, -4.2]);
+    expect([l.serverRack.x, l.serverRack.z]).toEqual([expect.closeTo(-2.7), -4.2]);
+    expect(l.bedroom).toMatchObject({ partitionX: -3.5, doorZ: expect.closeTo(-1.2), doorWidth: 1.3 });
   });
+
+  for (const n of [1, 3, 4, 7, 12]) {
+    it(`keeps beds, bedside tables, and the wardrobe in the bedroom, desks and rack outside, with ${n} agent(s)`, () => {
+      const l = createLayout(n);
+      const bedroom = l.bedroom!;
+      expect(bedroom.nightstands).toHaveLength(n);
+      for (const s of [...l.beds, ...bedroom.nightstands, bedroom.wardrobe]) expect(s.x, s.id).toBeLessThan(bedroom.partitionX);
+      for (const s of [...l.desks, l.serverRack]) expect(s.x, s.id).toBeGreaterThan(bedroom.partitionX);
+    });
+  }
 
   for (let n = 0; n <= 12; n++) {
     it(`gives ${n} agent(s) a valid office with one desk and one bed each`, () => {
@@ -84,14 +111,36 @@ describe('createLayout', () => {
         ...l.desks.map((d) => box(d, DESK_FOOTPRINT.halfWidth, DESK_FOOTPRINT.halfDepth, 0.15)),
         ...l.beds.map((b) => box(b, BED_FOOTPRINT.halfWidth, BED_FOOTPRINT.halfDepth, 0.05)),
         box(l.serverRack, RACK_FOOTPRINT.halfWidth, RACK_FOOTPRINT.halfDepth, 0),
+        ...l.bedroom!.nightstands.map((s) => box(s, NIGHTSTAND_FOOTPRINT.halfWidth, NIGHTSTAND_FOOTPRINT.halfDepth, 0)),
+        box(l.bedroom!.wardrobe, WARDROBE_FOOTPRINT.halfWidth, WARDROBE_FOOTPRINT.halfDepth, 0),
       ];
       l.desks.forEach((desk, i) => {
-        const points = [deskPlaces(desk, SEAT).standOut, ...(l.walkVia?.[i] ?? []), bedPlaces(l.beds[i]!).approach];
+        const points = walkPoints(l, i);
         for (let k = 0; k + 1 < points.length; k++) {
           const [a, b] = [points[k]!, points[k + 1]!];
           const blocked = furniture.filter((f) => f.id !== desk.id && hits(a.x, a.z, b.x, b.z, f)).map((f) => f.id);
           expect(blocked, `${desk.id} -> bed-${i + 1}, leg ${k}`).toEqual([]);
         }
+      });
+    });
+  }
+
+  // The partition is solid except for the doorway, so every walk must cross it there.
+  for (let n = 1; n <= 12; n++) {
+    it(`walks every agent through the doorway with ${n} agent(s)`, () => {
+      const l = createLayout(n);
+      const { partitionX, doorZ, doorWidth } = l.bedroom!;
+      l.desks.forEach((desk, i) => {
+        const points = walkPoints(l, i);
+        let crossings = 0;
+        for (let k = 0; k + 1 < points.length; k++) {
+          const [a, b] = [points[k]!, points[k + 1]!];
+          if ((a.x - partitionX) * (b.x - partitionX) >= 0) continue;
+          crossings++;
+          const z = a.z + ((partitionX - a.x) / (b.x - a.x)) * (b.z - a.z);
+          expect(Math.abs(z - doorZ), `${desk.id}, leg ${k}`).toBeLessThan(doorWidth / 2 - AVATAR_RADIUS);
+        }
+        expect(crossings, desk.id).toBe(1);
       });
     });
   }

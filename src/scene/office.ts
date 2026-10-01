@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createBed, createBedKit, type Bed } from './bed';
+import { createBedroom } from './bedroom';
 import { createDesk, createDeskKit, type Desk } from './desk';
 import type { OfficeLayout, Point } from './layout';
 import { createLights } from './lights';
@@ -45,7 +46,9 @@ export function buildOffice(layout: OfficeLayout, opts: OfficeOptions = {}): Off
 
   const decor = layout.decor ? createDecor(layout.decor, layout.room) : null;
   if (decor) root.add(decor.group);
-  // Window skies follow the viewer's clock; checking a few times a minute is plenty.
+  const bedroom = layout.bedroom ? createBedroom(layout.bedroom, layout.room, opts.anisotropy) : null;
+  if (bedroom) root.add(bedroom.group);
+  // Window skies and bedside lamps follow the viewer's clock; checking a few times a minute is plenty.
   let nextSkyCheck = -Infinity;
 
   return {
@@ -56,8 +59,10 @@ export function buildOffice(layout: OfficeLayout, opts: OfficeOptions = {}): Off
     rack,
     update(timeSeconds) {
       rack.update(timeSeconds);
-      if (decor && timeSeconds >= nextSkyCheck) {
-        decor.windows.setNight(nightFactor(new Date()));
+      if ((decor || bedroom) && timeSeconds >= nextSkyCheck) {
+        const night = nightFactor(new Date());
+        decor?.windows.setNight(night);
+        bedroom?.setNight(night);
         nextSkyCheck = timeSeconds + 10;
       }
     },

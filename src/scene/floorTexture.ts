@@ -147,3 +147,30 @@ export function createFloorTexture(anisotropy = 1): THREE.CanvasTexture | null {
   texture.anisotropy = anisotropy;
   return texture;
 }
+
+/** World units covered by one repeat of the carpet texture. */
+export const CARPET_TILE_SIZE = 2;
+
+/** Soft, low-pile carpet: a warm base with fine flecks. Null without a DOM. */
+export function createCarpetTexture(anisotropy = 1): THREE.CanvasTexture | null {
+  if (typeof document === 'undefined') return null;
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const ctx = c.getContext('2d');
+  if (!ctx) return null;
+  ctx.fillStyle = `#${new THREE.Color(PALETTE.carpet).getHexString()}`;
+  ctx.fillRect(0, 0, c.width, c.height);
+  const rng = createRng(5);
+  const fleck = new THREE.Color(PALETTE.carpetFleck).getHexString();
+  for (let i = 0; i < 2600; i++) {
+    ctx.globalAlpha = 0.25 + rng() * 0.35;
+    ctx.fillStyle = rng() < 0.7 ? `#${fleck}` : '#ffffff';
+    ctx.fillRect(Math.floor(rng() * c.width), Math.floor(rng() * c.height), 1 + Math.floor(rng() * 2), 1);
+  }
+  ctx.globalAlpha = 1;
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = anisotropy;
+  return t;
+}
