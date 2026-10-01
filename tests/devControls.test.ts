@@ -10,11 +10,12 @@ describe('commandForKey', () => {
     expect(commandForKey('5')).toEqual({ kind: 'force', state: 'offline' });
   });
 
-  it('maps 0 to demo mode', () => {
+  it('maps 0 to demo mode and 6 to a nap', () => {
     expect(commandForKey('0')).toEqual({ kind: 'demo' });
+    expect(commandForKey('6')).toEqual({ kind: 'nap' });
   });
 
   it('ignores other keys', () => {
-    for (const k of ['6', '9', 'a', ' ', 'Enter', '1.5', '01', '']) expect(commandForKey(k)).toBeNull();
+    for (const k of ['7', '9', 'a', ' ', 'Enter', '1.5', '01', '']) expect(commandForKey(k)).toBeNull();
   });
 });

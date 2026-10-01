@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { POSE_KEYS, blendPose, poseFor } from '../src/avatar/pose';
+import { POSE_KEYS, applyPosture, blendPose, liePose, poseFor, walkPose } from '../src/avatar/pose';
 import { oneHot } from '../src/avatar/stateMachine';
 import { AGENT_STATES } from '../src/data/types';
 
@@ -51,5 +51,54 @@ describe('blendPose', () => {
     const out = blendPose(oneHot('idle'), 0, 0, 0);
     expect(blendPose(oneHot('working'), 0, 0, 0, out)).toBe(out);
     expect(out.screen).toBe(1);
+  });
+});
+
+describe('applyPosture', () => {
+  const seated = { seated: 1, walk: 0, lie: 0 };
+  const walking = { seated: 0, walk: 1, lie: 0 };
+  const lying = { seated: 0, walk: 0, lie: 1 };
+
+  it('is the state pose itself while seated', () => {
+    for (const s of AGENT_STATES) {
+      const p = poseFor(s, 3, 0.2, -1);
+      expect(applyPosture(p, seated, 0, 3, 0.2)).toEqual(p);
+    }
+  });
+
+  it('walking shows feet, swings arms, and turns the monitor off', () => {
+    const p = applyPosture(poseFor('working', 1, 0, 0), walking, Math.PI / 2, 1, 0);
+    expect(p.feet).toBe(1);
+    expect(p.screen).toBe(0);
+    expect(p.handLZ).not.toBeCloseTo(p.handRZ);
+    expect(p.footLZ).toBeCloseTo(-p.footRZ);
+  });
+
+  it('lying is flat on the back, eyes shut, with zzz, even for an idle agent', () => {
+    const p = applyPosture(poseFor('idle', 1, 0, 0), lying, 0, 1, 0);
+    expect(p.lean).toBeCloseTo(-Math.PI / 2);
+    expect(p.eyes).toBeLessThan(0.3);
+    expect(p.zzz).toBe(1);
+    expect(p.feet).toBe(0);
+    expect(p.screen).toBe(0);
+  });
+
+  it('keeps status overlays from the state pose', () => {
+    const p = applyPosture(poseFor('offline', 1, 0, 0), lying, 0, 1, 0);
+    expect(p.dim).toBeLessThan(1);
+  });
+
+  it('blends linearly between postures', () => {
+    const sp = poseFor('idle', 0, 0, 0);
+    const half = applyPosture(sp, { seated: 0.5, walk: 0.5, lie: 0 }, 0, 0, 0);
+    const w = walkPose(0);
+    expect(half.lean).toBeCloseTo((sp.lean + w.lean) / 2);
+    expect(half.feet).toBeCloseTo(0.5);
+  });
+
+  it('produces finite numbers everywhere', () => {
+    const p = applyPosture(poseFor('error', 7, 1, -1), { seated: 0.2, walk: 0.3, lie: 0.5 }, 1.3, 7, 1);
+    for (const k of POSE_KEYS) expect(Number.isFinite(p[k])).toBe(true);
+    expect(liePose(0, 0).lean).toBeCloseTo(-Math.PI / 2);
   });
 });

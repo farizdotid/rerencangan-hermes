@@ -37,7 +37,10 @@ export class JobMemory {
       const prev = this.jobs.get(job.id);
       const rec: JobRecord = prev ?? { lastState: 'none' };
 
-      if (exec.state === 'success' || exec.state === 'failed') {
+      if (job.lastRun) {
+        // The CLI says when the last run finished; that beats our own guess.
+        rec.lastRun = job.lastRun;
+      } else if (exec.state === 'success' || exec.state === 'failed') {
         const changed = !prev || prev.lastState !== exec.state;
         if (exec.at) {
           rec.lastRun = { status: exec.state, at: exec.at };

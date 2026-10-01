@@ -16,6 +16,8 @@ export interface DescribeContext {
   stale: boolean;
   now: number;
   timeZone?: string;
+  /** The avatar is napping in its bed. */
+  sleeping?: boolean;
 }
 
 /**
@@ -47,7 +49,7 @@ export function describeAgent(agent: AgentStatus, ctx: DescribeContext): AgentDe
   const desc: AgentDescription = {
     title: agent.displayName,
     state: ctx.shownState,
-    stateLabel: STATE_LABELS[ctx.shownState],
+    stateLabel: ctx.sleeping && ctx.shownState === 'idle' ? 'Tidur' : STATE_LABELS[ctx.shownState],
     rows,
   };
   if (ctx.stale) desc.note = 'Koneksi ke server terputus; data mungkin sudah usang.';

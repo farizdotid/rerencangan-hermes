@@ -1,0 +1,13 @@
+Title                        Workspace          Last Active   ID
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Chat session one             home               7h ago        20260101_020000_aaaaaa
+Daily article job ·          —                  8h ago        cron_b2c3d4e5f6a1_20260930_230039
+Chat session two             home               19h ago       20260101_150000_bbbbbb
+Chat session three           home               50m ago       20260101_150500_cccccc
+Chat session four            home               yesterday     20260101_020900_dddddd
+—                            —                  yesterday     20260101_014300_eeeeee
+[/cmd] A long title cut of   home               yesterday     20260101_014400_ffffff
+Chat session five            —                  8h ago        20260101_000900_11111111
+Chat session six with a lo   home               22h ago       20260101_235900_222222
+—                            home               yesterday     20260101_235000_333333
+—                            home               yesterday     20260101_234600_444444

@@ -3,7 +3,12 @@ import { AllowlistError, COMMANDS, buildArgs, type CommandKey } from '../server/
 
 describe('allowlist', () => {
   it('contains only the read-only commands from the PRD', () => {
-    expect(Object.values(COMMANDS).map((c) => c.args.join(' '))).toEqual(['cron status', 'cron list', 'sessions list']);
+    expect(Object.values(COMMANDS).map((c) => c.args.join(' '))).toEqual([
+      'profile list',
+      'cron status',
+      'cron list',
+      'sessions list',
+    ]);
   });
 
   it('builds fixed argument lists', () => {

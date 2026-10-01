@@ -53,8 +53,9 @@ function projectedSize(box: THREE.Box3): { width: number; height: number } {
 export class IsoView {
   readonly camera: THREE.OrthographicCamera;
   readonly controls: OrbitControls;
-  private readonly minWidth: number;
-  private readonly minHeight: number;
+  private minWidth: number;
+  private minHeight: number;
+  private aspect: number;
 
   constructor(room: RoomSpec, aspect: number, dom: HTMLElement) {
     const box = roomBounds(room);
@@ -62,6 +63,7 @@ export class IsoView {
     const size = projectedSize(box);
     this.minWidth = size.width;
     this.minHeight = size.height;
+    this.aspect = aspect;
 
     const f = fitOrthoFrustum(aspect, this.minHeight, this.minWidth);
     this.camera = new THREE.OrthographicCamera(f.left, f.right, f.top, f.bottom, 0.1, DISTANCE * 2);
@@ -84,7 +86,22 @@ export class IsoView {
     this.controls = controls;
   }
 
+  /** Re-frame for a room of a different size, keeping the user's rotation and zoom. */
+  setRoom(room: RoomSpec): void {
+    const box = roomBounds(room);
+    const target = box.getCenter(new THREE.Vector3());
+    const size = projectedSize(box);
+    this.minWidth = size.width;
+    this.minHeight = size.height;
+    const shift = target.clone().sub(this.controls.target);
+    this.camera.position.add(shift);
+    this.controls.target.copy(target);
+    this.resize(this.aspect);
+    this.controls.update();
+  }
+
   resize(aspect: number): void {
+    this.aspect = aspect;
     const f = fitOrthoFrustum(aspect, this.minHeight, this.minWidth);
     this.camera.left = f.left;
     this.camera.right = f.right;

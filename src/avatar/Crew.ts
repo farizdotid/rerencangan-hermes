@@ -1,5 +1,6 @@
 import type * as THREE from 'three';
 import type { AgentState } from '../data/types';
+import type { Bed } from '../scene/bed';
 import type { Desk } from '../scene/desk';
 import { AGENT_COLORS } from '../scene/palette';
 import { AgentAvatar } from './AgentAvatar';
@@ -13,7 +14,12 @@ export interface CrewMember {
 export class Crew {
   private readonly avatars = new Map<string, AgentAvatar>();
 
-  constructor(members: readonly CrewMember[], desks: readonly Desk[]) {
+  constructor(
+    members: readonly CrewMember[],
+    desks: readonly Desk[],
+    beds: readonly Bed[] = [],
+    walkVia: readonly (readonly { x: number; z: number }[])[] = [],
+  ) {
     if (members.length > desks.length) {
       console.warn(`${members.length} agents but only ${desks.length} desks; extra agents are hidden`);
     }
@@ -23,6 +29,8 @@ export class Crew {
         displayName: m.displayName,
         color: AGENT_COLORS[i % AGENT_COLORS.length]!,
         desk: desks[i]!,
+        bed: beds[i] ?? null,
+        walkVia: walkVia[i] ?? [],
       });
       this.avatars.set(m.id, avatar);
     });
@@ -52,6 +60,18 @@ export class Crew {
       if (typeof id === 'string' && this.avatars.has(id)) return id;
     }
     return null;
+  }
+
+  isSleeping(id: string): boolean {
+    return this.avatars.get(id)?.sleeping ?? false;
+  }
+
+  /** Send every avatar to bed right away (dev shortcut). */
+  napAll(): void {
+    for (const a of this.avatars.values()) {
+      a.setState('idle');
+      a.napNow();
+    }
   }
 
   setSelected(id: string | null): void {

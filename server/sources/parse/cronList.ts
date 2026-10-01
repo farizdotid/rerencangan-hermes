@@ -12,6 +12,8 @@ export interface CronJob {
   nextRunAt?: string;
   overdue: boolean;
   execution?: { state: ExecutionState; at?: string };
+  /** From the "Last run:" line: when the last run finished and how it went. */
+  lastRun?: { status: 'success' | 'failed'; at: string };
 }
 
 export interface CronList {
@@ -39,6 +41,19 @@ export function parseExecution(value: string): { state: ExecutionState; at?: str
   else if (/^(?:none|idle|-|—|n\/a)$/.test(word) || word === '') state = 'none';
   const at = findIso(value);
   return at ? { state, at } : { state };
+}
+
+/**
+ * Reads "Last run:  <ISO time>  <result>". Confirmed by a real fixture: "ok".
+ * The failure words are an assumption until a fixture of a failed run exists.
+ */
+export function parseLastRun(value: string): CronJob['lastRun'] {
+  const at = findIso(value);
+  if (!at) return undefined;
+  const result = value.slice(value.indexOf(at) + at.length).trim().split(/\s+/)[0]?.toLowerCase() ?? '';
+  if (/^(?:ok|success|succeeded|completed|done)$/.test(result)) return { status: 'success', at };
+  if (/^(?:failed|fail|failure|error|errored|timeout|timed-out|crashed)$/.test(result)) return { status: 'failed', at };
+  return undefined;
 }
 
 /** Parses `hermes cron list` for one profile. Unknown fields are ignored. */
@@ -82,6 +97,9 @@ export function parseCronList(raw: string): CronList {
       if (/overdue/i.test(value)) job.overdue = true;
     } else if (key === 'execution') {
       job.execution = parseExecution(value);
+    } else if (key === 'last run') {
+      const last = parseLastRun(value);
+      if (last) job.lastRun = last;
     }
   }
   return out;

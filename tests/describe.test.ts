@@ -42,6 +42,11 @@ describe('describeAgent', () => {
     expect(d.note).toBe('Gateway tidak berjalan.');
   });
 
+  it('says "Tidur" for an idle agent napping in bed', () => {
+    expect(describeAgent(agent, ctx({ shownState: 'idle', sleeping: true })).stateLabel).toBe('Tidur');
+    expect(describeAgent(agent, ctx({ shownState: 'offline', sleeping: true })).stateLabel).toBe('Offline');
+  });
+
   it('uses dashes for missing times', () => {
     const d = describeAgent({ id: 'x', displayName: 'x', state: 'idle', activeJobs: 0 }, ctx({ shownState: 'idle' }));
     expect(d.rows).toEqual([

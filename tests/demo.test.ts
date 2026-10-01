@@ -51,10 +51,35 @@ describe('DemoGenerator', () => {
   });
 
   it('keeps changing over time', () => {
-    const g = new DemoGenerator(ids, 0, { rng: createRng(3) });
+    const g = new DemoGenerator(ids, 0, { rng: createRng(3), longIdleChance: 0 });
     let total = 0;
     for (let t = 0; t <= 60; t += 0.5) total += g.tick(t).length;
     // 3 agents, 2-6 s intervals, 60 s => at least 3 * 10 changes.
     expect(total).toBeGreaterThanOrEqual(30);
+  });
+
+  it('sometimes holds idle long enough for a nap', () => {
+    const g = new DemoGenerator(['a'], 0, {
+      rng: createRng(11),
+      longIdleChance: 1,
+      longIdleSeconds: [200, 210],
+    });
+    // The initial idle uses a normal interval; wait for it to end, then for the next idle.
+    let t = 0;
+    while (g.stateOf('a') === 'idle') {
+      t += 0.5;
+      g.tick(t);
+    }
+    while (g.stateOf('a') !== 'idle') {
+      t += 0.5;
+      g.tick(t);
+      if (t > 600) throw new Error('never became idle again');
+    }
+    const idleAt = t;
+    while (g.stateOf('a') === 'idle' && t < idleAt + 300) {
+      t += 0.5;
+      g.tick(t);
+    }
+    expect(t - idleAt).toBeGreaterThanOrEqual(200);
   });
 });

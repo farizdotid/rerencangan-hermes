@@ -36,7 +36,11 @@ if (config.mode === 'real') {
     );
   }
   const bin = config.hermesBin;
-  source = new HermesSource(config.agents, (key, profile, signal) => runHermes(key, profile, { bin, signal }));
+  source = new HermesSource((key, profile, signal) => runHermes(key, profile, { bin, signal }), {
+    // Profiles come from `hermes profile list`; config.local.json only renames, reorders, or hides.
+    fallback: config.overrides,
+    overrides: config.overrides,
+  });
 } else {
   source = new DemoSource(config.agents);
 }
@@ -56,7 +60,11 @@ server.on('error', (err: NodeJS.ErrnoException) => {
 server.listen(config.port, config.host, () => {
   source.start();
   const url = `http://${config.host.includes(':') ? `[${config.host}]` : config.host}:${config.port}`;
-  console.log(`rerencangan-hermes: ${config.mode} mode, ${config.agents.length} agent(s) from ${config.configFile}`);
+  const agentsNote =
+    config.mode === 'real'
+      ? 'profiles from `hermes profile list`'
+      : `${config.agents.length} agent(s) from ${config.configFile}`;
+  console.log(`rerencangan-hermes: ${config.mode} mode, ${agentsNote}`);
   console.log(`rerencangan-hermes: listening on ${url}${staticDir ? '' : ' (API only; run "npm run build" to serve the UI)'}`);
 });
 

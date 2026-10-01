@@ -39,8 +39,22 @@ describe('validateLayout', () => {
     // Rotated 90°, the desk's depth runs along X and pokes past the side wall.
     const halfW = DEFAULT_LAYOUT.room.width / 2;
     const slot = { id: 'r', x: -halfW + 1.05, z: 0, rotationY: Math.PI / 2 };
-    expect(validateLayout(withDesks([{ ...slot, rotationY: 0 }]))).toEqual([]);
-    expect(validateLayout(withDesks([slot]))).toContain('slot "r" is outside the room');
+    const noBeds = (desks: OfficeLayout['desks']) => ({ ...withDesks(desks), beds: [] });
+    expect(validateLayout(noBeds([{ ...slot, rotationY: 0 }]))).toEqual([]);
+    expect(validateLayout(noBeds([slot]))).toContain('slot "r" is outside the room');
+  });
+
+  it('checks beds for bounds, overlaps, and duplicate ids', () => {
+    const bed = DEFAULT_LAYOUT.beds[0]!;
+    expect(validateLayout({ ...DEFAULT_LAYOUT, beds: [bed, { ...bed, id: 'bed-x', z: bed.z + 0.5 }] })).toContain(
+      'slots "bed-1" and "bed-x" overlap',
+    );
+    expect(validateLayout({ ...DEFAULT_LAYOUT, beds: [{ ...bed, x: -6.5 }] })).toContain('slot "bed-1" is outside the room');
+    expect(validateLayout({ ...DEFAULT_LAYOUT, beds: [{ ...bed, id: 'desk-1' }] })).toContain('duplicate slot id "desk-1"');
+  });
+
+  it('has one bed per desk in the default layout', () => {
+    expect(DEFAULT_LAYOUT.beds).toHaveLength(DEFAULT_LAYOUT.desks.length);
   });
 
   it('rejects non-finite coordinates and bad room sizes', () => {
