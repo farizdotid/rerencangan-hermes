@@ -1,4 +1,5 @@
 import type { BedPlaces, DeskPlaces, Placement } from './route';
+import { WALK_Y } from './route';
 
 /** How long an agent stays idle at its desk before walking off for a nap. */
 export const SLEEP_AFTER_IDLE_SECONDS = 180;
@@ -62,9 +63,14 @@ export class Locomotion {
   private destination: Destination = 'desk';
   private plan: Step[] = [];
 
+  /**
+   * @param via waypoints (x/z) on the way from the desk to the bed; walked in
+   *   reverse on the way back.
+   */
   constructor(
     private readonly desk: DeskPlaces,
     private readonly bed: BedPlaces | null,
+    private readonly via: readonly { x: number; z: number }[] = [],
   ) {
     ({ x: this.x, y: this.y, z: this.z, yaw: this.yaw } = desk.seat);
   }
@@ -98,6 +104,7 @@ export class Locomotion {
     if (this.posture.lie > 0) return [this.moveTo(bed.lie, LYING, 0.9 * (1 - this.posture.lie) + 0.15)];
     const steps: Step[] = [];
     if (this.posture.seated > 0) steps.push(this.moveTo(this.desk.standOut, WALKING, 0.5));
+    for (const p of this.via) steps.push(this.walkTo(p));
     steps.push({ kind: 'walk', to: bed.approach });
     steps.push(this.moveTo(bed.lie, LYING, 1.0));
     return steps;
@@ -108,9 +115,14 @@ export class Locomotion {
     if (p.seated > 0 && p.lie === 0) return [this.moveTo(this.desk.seat, SEATED, 0.5 * (1 - p.seated) + 0.15)];
     const steps: Step[] = [];
     if (p.lie > 0 && this.bed) steps.push(this.moveTo(this.bed.approach, WALKING, 0.9));
+    for (const v of [...this.via].reverse()) steps.push(this.walkTo(v));
     steps.push({ kind: 'walk', to: this.desk.standOut });
     steps.push(this.moveTo(this.desk.seat, SEATED, 0.5));
     return steps;
+  }
+
+  private walkTo(p: { x: number; z: number }): Step {
+    return { kind: 'walk', to: { x: p.x, y: WALK_Y, z: p.z, yaw: 0 } };
   }
 
   private moveTo(to: Placement, posture: Posture, duration: number): Step {

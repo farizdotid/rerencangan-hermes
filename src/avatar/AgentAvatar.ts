@@ -16,6 +16,8 @@ export interface AgentAvatarOptions {
   desk: Desk;
   /** Where this agent naps after a long idle; without one it stays at the desk. */
   bed?: Bed | null;
+  /** Waypoints on the walk from desk to bed (office space). */
+  walkVia?: readonly { x: number; z: number }[];
   initialState?: AgentState;
 }
 
@@ -108,6 +110,7 @@ export class AgentAvatar {
     this.loco = new Locomotion(
       deskPlaces(opts.desk.slot, opts.desk.seatPosition),
       opts.bed ? bedPlaces(opts.bed.slot) : null,
+      opts.walkVia ?? [],
     );
 
     // Body

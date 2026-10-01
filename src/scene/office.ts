@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createBed, createBedKit, type Bed } from './bed';
 import { createDesk, createDeskKit, type Desk } from './desk';
-import type { OfficeLayout } from './layout';
+import type { OfficeLayout, Point } from './layout';
 import { createLights } from './lights';
 import { createRoom } from './room';
 import { ServerRack } from './serverRack';
@@ -10,6 +10,8 @@ export interface Office {
   root: THREE.Group;
   desks: Desk[];
   beds: Bed[];
+  /** Per desk: waypoints for the walk to bed. */
+  walkVia: Point[][];
   rack: ServerRack;
   update(timeSeconds: number): void;
   dispose(): void;
@@ -38,6 +40,7 @@ export function buildOffice(layout: OfficeLayout): Office {
     root,
     desks,
     beds,
+    walkVia: layout.walkVia ?? [],
     rack,
     update(timeSeconds) {
       rack.update(timeSeconds);

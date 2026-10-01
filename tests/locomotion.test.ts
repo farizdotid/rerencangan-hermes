@@ -109,6 +109,29 @@ describe('Locomotion', () => {
     expect(l.x).toBeCloseTo(bed.lie.x);
   });
 
+  it('walks through waypoints in order, and back in reverse', () => {
+    const via = [
+      { x: desk.standOut.x, z: desk.standOut.z + 2 },
+      { x: bed.approach.x + 1, z: desk.standOut.z + 2 },
+    ];
+    const l = new Locomotion(desk, bed, via);
+    const closest = (pts: { x: number; z: number }[]) => {
+      const seen: number[] = [];
+      return { seen, track: (s: Locomotion) => pts.forEach((p, k) => {
+        if (Math.hypot(s.x - p.x, s.z - p.z) < 0.02 && !seen.includes(k)) seen.push(k);
+      }) };
+    };
+    const out = closest(via);
+    l.goTo('bed');
+    settle(l, out.track);
+    expect(out.seen).toEqual([0, 1]);
+    const back = closest(via);
+    l.goTo('desk');
+    settle(l, back.track);
+    expect(back.seen).toEqual([1, 0]);
+    expect(l.posture.seated).toBe(1);
+  });
+
   it('stays at the desk when there is no bed', () => {
     const l = new Locomotion(desk, null);
     l.goTo('bed');

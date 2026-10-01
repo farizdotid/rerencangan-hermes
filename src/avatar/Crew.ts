@@ -14,7 +14,12 @@ export interface CrewMember {
 export class Crew {
   private readonly avatars = new Map<string, AgentAvatar>();
 
-  constructor(members: readonly CrewMember[], desks: readonly Desk[], beds: readonly Bed[] = []) {
+  constructor(
+    members: readonly CrewMember[],
+    desks: readonly Desk[],
+    beds: readonly Bed[] = [],
+    walkVia: readonly (readonly { x: number; z: number }[])[] = [],
+  ) {
     if (members.length > desks.length) {
       console.warn(`${members.length} agents but only ${desks.length} desks; extra agents are hidden`);
     }
@@ -25,6 +30,7 @@ export class Crew {
         color: AGENT_COLORS[i % AGENT_COLORS.length]!,
         desk: desks[i]!,
         bed: beds[i] ?? null,
+        walkVia: walkVia[i] ?? [],
       });
       this.avatars.set(m.id, avatar);
     });
