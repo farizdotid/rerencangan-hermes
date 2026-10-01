@@ -26,6 +26,7 @@ describe('loadConfig', () => {
         { id: 'default', displayName: 'default' },
         { id: 'writer', displayName: 'Writer' },
       ],
+      overrides: [],
     });
   });
 
@@ -35,6 +36,26 @@ describe('loadConfig', () => {
     expect(c.configFile).toBe('config.local.json');
     expect(c.port).toBe(9700);
     expect(c.agents.map((a) => a.id)).toEqual(['mine']);
+  });
+
+  it('in real mode, allows a local file without agents and keeps overrides', () => {
+    writeFileSync(join(dir, 'config.local.json'), JSON.stringify({ port: 9700 }));
+    const c = loadConfig({ rootDir: dir, env: { MODE: 'real' } });
+    expect(c.agents).toEqual([]);
+    expect(c.overrides).toEqual([]);
+    expect(() => loadConfig({ rootDir: dir, env: {} })).toThrow(/agents/);
+
+    writeFileSync(
+      join(dir, 'config.local.json'),
+      JSON.stringify({ agents: [{ id: 'a', displayName: 'Alpha' }, { id: 'b', hidden: true }] }),
+    );
+    const r = loadConfig({ rootDir: dir, env: { MODE: 'real' } });
+    expect(r.overrides).toEqual([{ id: 'a', displayName: 'Alpha' }, { id: 'b', displayName: 'b', hidden: true }]);
+    expect(r.agents).toEqual([{ id: 'a', displayName: 'Alpha' }]);
+  });
+
+  it('rejects a non-boolean hidden flag', () => {
+    expect(() => parseAgents([{ id: 'a', hidden: 'yes' }], 't')).toThrow(/hidden/);
   });
 
   it('lets environment override port and mode', () => {

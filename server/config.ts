@@ -7,6 +7,8 @@ export type Mode = 'demo' | 'real';
 export interface AgentConfig {
   id: string;
   displayName: string;
+  /** Leave this profile out of the office. */
+  hidden?: boolean;
 }
 
 export interface ServerConfig {
@@ -18,6 +20,12 @@ export interface ServerConfig {
   agents: AgentConfig[];
   /** Which file the agents came from, for the startup log. */
   configFile: string;
+  /**
+   * Agents the owner listed in config.local.json. In real mode these only
+   * rename, reorder, or hide discovered profiles; empty when there is no
+   * local file (the example file is never applied to real Hermes data).
+   */
+  overrides: AgentConfig[];
 }
 
 export const DEFAULT_HOST = '127.0.0.1';
@@ -50,8 +58,8 @@ export function parsePort(value: unknown, source: string): number {
   return n;
 }
 
-export function parseAgents(value: unknown, source: string): AgentConfig[] {
-  if (!Array.isArray(value) || value.length === 0) {
+export function parseAgents(value: unknown, source: string, allowEmpty = false): AgentConfig[] {
+  if (!Array.isArray(value) || (value.length === 0 && !allowEmpty)) {
     throw new ConfigError(`${source}: "agents" must be a non-empty array`);
   }
   if (value.length > MAX_AGENTS) throw new ConfigError(`${source}: at most ${MAX_AGENTS} agents`);
@@ -59,7 +67,7 @@ export function parseAgents(value: unknown, source: string): AgentConfig[] {
   return value.map((entry, i) => {
     const where = `${source}: agents[${i}]`;
     if (typeof entry !== 'object' || entry === null) throw new ConfigError(`${where} must be an object`);
-    const { id, displayName } = entry as Record<string, unknown>;
+    const { id, displayName, hidden } = entry as Record<string, unknown>;
     if (typeof id !== 'string' || !PROFILE_ID.test(id)) {
       throw new ConfigError(`${where}.id must match ${PROFILE_ID}`);
     }
@@ -72,7 +80,10 @@ export function parseAgents(value: unknown, source: string): AgentConfig[] {
       }
       name = displayName.trim().slice(0, MAX_DISPLAY_NAME);
     }
-    return { id, displayName: name };
+    if (hidden !== undefined && typeof hidden !== 'boolean') {
+      throw new ConfigError(`${where}.hidden must be true or false`);
+    }
+    return hidden ? { id, displayName: name, hidden: true } : { id, displayName: name };
   });
 }
 
@@ -81,7 +92,7 @@ interface FileConfig {
   agents: AgentConfig[];
 }
 
-function readConfigFile(path: string, label: string): FileConfig {
+function readConfigFile(path: string, label: string, agentsOptional: boolean): FileConfig {
   let raw: unknown;
   try {
     raw = JSON.parse(readFileSync(path, 'utf8'));
@@ -90,7 +101,8 @@ function readConfigFile(path: string, label: string): FileConfig {
   }
   if (typeof raw !== 'object' || raw === null) throw new ConfigError(`${label}: must be a JSON object`);
   const obj = raw as Record<string, unknown>;
-  const out: FileConfig = { agents: parseAgents(obj.agents, label) };
+  const agents = obj.agents === undefined && agentsOptional ? [] : parseAgents(obj.agents, label, agentsOptional);
+  const out: FileConfig = { agents };
   if (obj.port !== undefined) out.port = parsePort(obj.port, label);
   return out;
 }
@@ -109,7 +121,9 @@ export function loadConfig({ env = process.env, rootDir }: LoadOptions): ServerC
   const examplePath = resolve(rootDir, 'config.example.json');
   const useLocal = existsSync(localPath);
   const label = useLocal ? 'config.local.json' : 'config.example.json';
-  const file = readConfigFile(useLocal ? localPath : examplePath, label);
+  // In real mode profiles are discovered, so the local file may leave agents out.
+  const realMode = env.MODE?.trim() === 'real';
+  const file = readConfigFile(useLocal ? localPath : examplePath, label, useLocal && realMode);
 
   const host = env.HOST?.trim() || DEFAULT_HOST;
   if (!isLoopbackHost(host)) {
@@ -128,5 +142,13 @@ export function loadConfig({ env = process.env, rootDir }: LoadOptions): ServerC
     throw new ConfigError('HERMES_BIN must be an absolute path to the hermes executable');
   }
 
-  return { host, port, mode: modeRaw, hermesBin, agents: file.agents, configFile: label };
+  return {
+    host,
+    port,
+    mode: modeRaw,
+    hermesBin,
+    agents: file.agents.filter((a) => !a.hidden),
+    configFile: label,
+    overrides: useLocal ? file.agents : [],
+  };
 }
