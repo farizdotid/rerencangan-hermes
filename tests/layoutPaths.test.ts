@@ -96,3 +96,54 @@ describe('createLayout', () => {
     });
   }
 });
+
+describe('createLayout decor', () => {
+  const MONITOR_HALF_WIDTH = 0.45;
+
+  for (const n of [0, 1, 2, 3, 4, 5, 6, 7, 12]) {
+    it(`places windows, a shelf, and a plant without clashes for ${n} agent(s)`, () => {
+      const l = createLayout(n);
+      const decor = l.decor!;
+      expect(validateLayout(l)).toEqual([]);
+      expect(decor.windows.some((w) => w.wall === 'side')).toBe(true);
+      expect(decor.shelves).toHaveLength(1);
+      expect(decor.plants).toHaveLength(1);
+      // Back windows sit between monitors in the first row, never right behind one.
+      const row0 = l.desks.filter((d) => d.z === l.desks[0]?.z);
+      for (const w of decor.windows.filter((w) => w.wall === 'back')) {
+        for (const d of row0) {
+          expect(Math.abs(w.at - d.x), `${w.id} vs ${d.id}`).toBeGreaterThan(w.width / 2 + MONITOR_HALF_WIDTH - 0.01);
+        }
+      }
+    });
+  }
+
+  it('gives a room with desks at least one back-wall window', () => {
+    for (let n = 1; n <= 12; n++) expect(createLayout(n).decor!.windows.some((w) => w.wall === 'back')).toBe(true);
+  });
+});
+
+describe('validateLayout wall items', () => {
+  it('rejects wall items that overlap or do not fit', () => {
+    const l = createLayout(3);
+    const win = l.decor!.windows[0]!;
+    const shelf = l.decor!.shelves[0]!;
+    const bad = (decor: NonNullable<typeof l.decor>) => validateLayout({ ...l, decor });
+    expect(bad({ ...l.decor!, shelves: [{ ...shelf, at: win.at }] })).toContain(
+      `wall items "${win.id}" and "${shelf.id}" overlap`,
+    );
+    expect(bad({ ...l.decor!, windows: [{ ...win, at: 100 }] })).toContain(`wall item "${win.id}" does not fit on the back wall`);
+    expect(bad({ ...l.decor!, windows: [{ ...win, top: 99 }] })).toContain(`wall item "${win.id}" does not fit on the back wall`);
+    expect(bad({ ...l.decor!, windows: [{ ...win, width: 0 }] })).toContain(`wall item "${win.id}" has invalid dimensions`);
+    // Same spot on different walls is fine.
+    expect(bad({ ...l.decor!, windows: [win], shelves: [{ ...shelf, wall: 'side', at: win.at }] })).toEqual([]);
+  });
+
+  it('rejects a plant that overlaps furniture', () => {
+    const l = createLayout(3);
+    const desk = l.desks[0]!;
+    expect(validateLayout({ ...l, decor: { ...l.decor!, plants: [{ id: 'p', x: desk.x, z: desk.z, rotationY: 0 }] } })).toContain(
+      `slots "${desk.id}" and "p" overlap`,
+    );
+  });
+});

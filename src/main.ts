@@ -39,7 +39,8 @@ scene.background = new THREE.Color(PALETTE.background);
 const view = new IsoView(DEFAULT_LAYOUT.room, container.clientWidth / container.clientHeight, renderer.domElement);
 
 // Rebuilt with one desk and bed per agent once the first snapshot says how many there are.
-let office = buildOffice(checkLayout(DEFAULT_LAYOUT));
+const officeOptions = { anisotropy: Math.min(8, renderer.capabilities.getMaxAnisotropy()) };
+let office = buildOffice(checkLayout(DEFAULT_LAYOUT), officeOptions);
 let officeSize = DEFAULT_LAYOUT.desks.length;
 scene.add(office.root);
 
@@ -107,7 +108,7 @@ function fitOffice(agentCount: number): void {
   roster = '';
   office.dispose();
   const layout = checkLayout(createLayout(agentCount));
-  office = buildOffice(layout);
+  office = buildOffice(layout, officeOptions);
   officeSize = agentCount;
   scene.add(office.root);
   view.setRoom(layout.room);

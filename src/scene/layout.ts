@@ -28,6 +28,24 @@ export interface Point {
   z: number;
 }
 
+/** Something hung on a wall. `at` is the centre along the wall: X on the back wall, Z on the side wall. */
+export interface WallItem {
+  id: string;
+  wall: 'back' | 'side';
+  at: number;
+  width: number;
+  /** Height range above the floor. */
+  bottom: number;
+  top: number;
+}
+
+export interface Decor {
+  windows: WallItem[];
+  shelves: WallItem[];
+  /** Potted plants standing on the floor. */
+  plants: Slot[];
+}
+
 export interface OfficeLayout {
   room: RoomSpec;
   desks: Slot[];
@@ -39,12 +57,18 @@ export interface OfficeLayout {
    */
   walkVia?: Point[][];
   serverRack: Slot;
+  decor?: Decor;
 }
 
 /** Footprint half-sizes used for bounds and overlap checks. */
 export const DESK_FOOTPRINT = { halfWidth: 1.0, halfDepth: 1.1 } as const;
 export const RACK_FOOTPRINT = { halfWidth: 0.45, halfDepth: 0.4 } as const;
 export const BED_FOOTPRINT = { halfWidth: 0.6, halfDepth: 1.1 } as const;
+export const PLANT_FOOTPRINT = { halfWidth: 0.35, halfDepth: 0.35 } as const;
+
+/** Window and shelf sizes used by createLayout. */
+export const WINDOW = { width: 1.4, bottom: 1.2, top: 2.4 } as const;
+export const SHELF = { width: 1.0, bottom: 1.6, top: 2.05 } as const;
 
 /** Spacing and margins used by createLayout. */
 const DESK_SPACING = 3.3;
@@ -102,6 +126,30 @@ export function createLayout(agentCount: number): OfficeLayout {
     beds,
     walkVia,
     serverRack: { id: 'rack', x: -halfW + 0.8, z: -halfD + 0.8, rotationY: Math.PI / 2 },
+    decor: createDecor(desks, beds, halfW, halfD, cols),
+  };
+}
+
+/**
+ * Windows between every other pair of desks in the first row (between the
+ * monitors, not behind them), one above the beds, a shelf between the rack
+ * and the first desk, and a plant in the back-right corner.
+ */
+function createDecor(desks: Slot[], beds: Slot[], halfW: number, halfD: number, cols: number): Decor {
+  const windowAt = (id: string, wall: WallItem['wall'], at: number): WallItem => ({ id, wall, at, ...WINDOW });
+  const windows: WallItem[] = [];
+  const row0 = desks.slice(0, cols);
+  for (let i = 0; i + 1 < row0.length; i += 2) {
+    windows.push(windowAt(`window-back-${windows.length + 1}`, 'back', (row0[i]!.x + row0[i + 1]!.x) / 2));
+  }
+  if (row0.length === 1) windows.push(windowAt('window-back-1', 'back', row0[0]!.x + DESK_SPACING / 2));
+  const bedMid = beds.length > 0 ? (beds[0]!.z + beds[beds.length - 1]!.z) / 2 : 0;
+  windows.push(windowAt('window-side-1', 'side', bedMid));
+
+  return {
+    windows,
+    shelves: [{ id: 'shelf-1', wall: 'back', at: -halfW + 2.4, ...SHELF }],
+    plants: [{ id: 'plant-1', x: halfW - 0.55, z: -halfD + 0.55, rotationY: 0 }],
   };
 }
 
@@ -139,7 +187,8 @@ export function validateLayout(layout: OfficeLayout): string[] {
     return errors;
   }
 
-  const slots = [...layout.desks, ...layout.beds, layout.serverRack];
+  const plants = layout.decor?.plants ?? [];
+  const slots = [...layout.desks, ...layout.beds, layout.serverRack, ...plants];
   const allFinite = slots.every(
     (s) => Number.isFinite(s.x) && Number.isFinite(s.z) && Number.isFinite(s.rotationY),
   );
@@ -158,6 +207,7 @@ export function validateLayout(layout: OfficeLayout): string[] {
     ...layout.desks.map((d) => footprintBox(d, DESK_FOOTPRINT.halfWidth, DESK_FOOTPRINT.halfDepth)),
     ...layout.beds.map((b) => footprintBox(b, BED_FOOTPRINT.halfWidth, BED_FOOTPRINT.halfDepth)),
     footprintBox(layout.serverRack, RACK_FOOTPRINT.halfWidth, RACK_FOOTPRINT.halfDepth),
+    ...plants.map((p) => footprintBox(p, PLANT_FOOTPRINT.halfWidth, PLANT_FOOTPRINT.halfDepth)),
   ];
 
   const halfW = room.width / 2;
@@ -176,5 +226,33 @@ export function validateLayout(layout: OfficeLayout): string[] {
     }
   }
 
+  errors.push(...validateWallItems(layout));
+  return errors;
+}
+
+/** Wall items must fit on their wall and not overlap each other. */
+function validateWallItems(layout: OfficeLayout): string[] {
+  const errors: string[] = [];
+  const decor = layout.decor;
+  if (!decor) return errors;
+  const items = [...decor.windows, ...decor.shelves];
+  const { room } = layout;
+  for (const it of items) {
+    const half = (it.wall === 'back' ? room.width : room.depth) / 2;
+    if (!(Number.isFinite(it.at) && it.width > 0 && it.bottom >= 0 && it.top > it.bottom)) {
+      errors.push(`wall item "${it.id}" has invalid dimensions`);
+    } else if (it.at - it.width / 2 < -half || it.at + it.width / 2 > half || it.top > room.wallHeight) {
+      errors.push(`wall item "${it.id}" does not fit on the ${it.wall} wall`);
+    }
+  }
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      const a = items[i]!;
+      const b = items[j]!;
+      const sideways = Math.abs(a.at - b.at) < (a.width + b.width) / 2;
+      const vertical = a.bottom < b.top && b.bottom < a.top;
+      if (a.wall === b.wall && sideways && vertical) errors.push(`wall items "${a.id}" and "${b.id}" overlap`);
+    }
+  }
   return errors;
 }
