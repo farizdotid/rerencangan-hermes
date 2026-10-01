@@ -9,7 +9,7 @@ failing ones raise an alarm. *Rerencangan* means "friends" in Sundanese.
 > or maintained by Nous Research or the authors of Hermes Agent. "Hermes" here
 > only refers to the agent being monitored.
 
-**Status:** early development (Phase 4: read-only Hermes collector, pending CLI verification). See [`PRD.md`](./PRD.md) for
+**Status:** early development (Phase 4: read-only Hermes collector). See [`PRD.md`](./PRD.md) for
 the full plan.
 
 ## Requirements
@@ -87,23 +87,49 @@ bed each, up to six desks per row, and the room grows to fit.
 
 `MODE=demo` (default) shows fake data and never touches Hermes.
 
-`MODE=real` polls the Hermes CLI every 7 seconds, read-only. It is **locked**
-for now: the server refuses to start in real mode until the CLI syntax has
-been verified against `hermes --help` on the target machine. Set `HERMES_BIN`
-to an absolute path if `hermes` is not on the server's `PATH`.
+`MODE=real` reads your Hermes profiles through the CLI, read-only, every 10
+seconds. Set `HERMES_BIN` to an absolute path if `hermes` is not on the
+server's `PATH`.
 
-Real mode runs only these commands (`server/sources/allowlist.ts`):
+```sh
+MODE=real npm start
+```
 
-| Command | Used for |
-|---|---|
-| `hermes cron status` | Gateway running, heartbeat age |
-| `hermes cron list` (per profile) | Running job, last run, next run, job count |
-| `hermes sessions list` (per profile) | Active sessions (not used yet) |
+Profiles are discovered with `hermes profile list`, so `config.local.json` is
+optional in real mode. When present, it only renames, reorders, or hides
+profiles:
 
-State rules, in priority order: gateway not running → `offline`; a failed
-run in the last 30 minutes → `error`; a running job → `working`; a
-successful run in the last 2 minutes → `celebrating`; otherwise `idle`.
-Output that cannot be understood shows `idle` with an "unknown" flag.
+```json
+{
+  "agents": [
+    { "id": "default", "displayName": "Main" },
+    { "id": "some-profile", "hidden": true }
+  ]
+}
+```
+
+Real mode runs only these commands (`server/sources/allowlist.ts`), always as
+`hermes -p <profile> ...` for per-profile ones:
+
+| Command | Used for | How often |
+|---|---|---|
+| `hermes profile list` | Which profiles exist, each profile's gateway | Every 60 s |
+| `hermes cron status` | Scheduler gateway, heartbeat age | Every poll |
+| `hermes -p <profile> cron list` | Running job, last run, next run, job count | Every poll |
+| `hermes -p <profile> sessions list` | Whether a session was active in the last 2 minutes | Every poll |
+
+Session titles in `sessions list` are dropped by the parser and never reach
+the browser; only how long ago a session was active is used.
+
+Each poll starts `1 + 2 × profiles` short `hermes` processes, one at a time.
+If that is too heavy for a small VPS, check how long one takes with
+`time hermes cron list`.
+
+State rules, in priority order: the profile's gateway not running →
+`offline`; a failed run in the last 30 minutes → `error`; a running job or a
+session active in the last 2 minutes → `working`; a successful run in the
+last 2 minutes → `celebrating`; otherwise `idle`. Output that cannot be
+understood shows `idle` with an "unknown" flag.
 
 ## Security model
 
