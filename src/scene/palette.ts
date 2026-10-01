@@ -3,6 +3,8 @@ export const PALETTE = {
   background: 0xeef3fb,
   floor: 0xd8dfea,
   floorEdge: 0xc9d2df,
+  floorWood: 0xbe9670,
+  floorSeam: 0x9c7a58,
   wall: 0xf8f6f2,
   wallTrim: 0xc5d4ec,
   deskTop: 0xdcc3a1,
