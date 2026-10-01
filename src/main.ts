@@ -4,7 +4,7 @@ import { StatusClient, type ConnectionStatus } from './data/client';
 import { displayStates, rosterKey } from './data/present';
 import type { AgentState, Snapshot } from './data/types';
 import { IsoView } from './scene/camera';
-import { DEFAULT_LAYOUT, validateLayout } from './scene/layout';
+import { DEFAULT_LAYOUT, createLayout, validateLayout, type OfficeLayout } from './scene/layout';
 import { buildOffice } from './scene/office';
 import { PALETTE } from './scene/palette';
 import { clampPixelRatio } from './scene/pixelRatio';
@@ -20,8 +20,11 @@ import './style.css';
 const container = document.getElementById('app');
 if (!container) throw new Error('#app container not found');
 
-const layoutErrors = validateLayout(DEFAULT_LAYOUT);
-if (layoutErrors.length > 0) throw new Error(`Invalid office layout: ${layoutErrors.join('; ')}`);
+function checkLayout(layout: OfficeLayout): OfficeLayout {
+  const errors = validateLayout(layout);
+  if (errors.length > 0) throw new Error(`Invalid office layout: ${errors.join('; ')}`);
+  return layout;
+}
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(clampPixelRatio(window.devicePixelRatio));
@@ -35,7 +38,9 @@ scene.background = new THREE.Color(PALETTE.background);
 
 const view = new IsoView(DEFAULT_LAYOUT.room, container.clientWidth / container.clientHeight, renderer.domElement);
 
-const office = buildOffice(DEFAULT_LAYOUT);
+// Rebuilt with one desk and bed per agent once the first snapshot says how many there are.
+let office = buildOffice(checkLayout(DEFAULT_LAYOUT));
+let officeSize = DEFAULT_LAYOUT.desks.length;
 scene.add(office.root);
 
 /** How long the server may be unreachable before avatars stop trusting the last snapshot. */
@@ -94,13 +99,28 @@ function syncStates(): void {
   refreshUi();
 }
 
+/** Makes sure there is exactly one desk and bed per agent. */
+function fitOffice(agentCount: number): void {
+  if (agentCount === officeSize) return;
+  crew?.dispose();
+  crew = null;
+  roster = '';
+  office.dispose();
+  const layout = checkLayout(createLayout(agentCount));
+  office = buildOffice(layout);
+  officeSize = agentCount;
+  scene.add(office.root);
+  view.setRoom(layout.room);
+}
+
 function onSnapshot(snapshot: Snapshot): void {
   latest = snapshot;
   receivedAt = Date.now();
+  fitOffice(snapshot.agents.length);
   const key = rosterKey(snapshot.agents);
   if (key !== roster) {
     crew?.dispose();
-    crew = new Crew(snapshot.agents, office.desks, office.beds);
+    crew = new Crew(snapshot.agents, office.desks, office.beds, office.walkVia);
     roster = key;
     if (forced) crew.setAll(forced);
     crew.setSelected(selectedId);
