@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { ConfigError, isLoopbackHost, loadConfig, parseAgents, parsePort } from '../server/config';
+import { ConfigError, isLoopbackHost, loadConfig, modeFromArgs, parseAgents, parsePort } from '../server/config';
 
 let dir: string;
 const example = { port: 9600, agents: [{ id: 'default' }, { id: 'writer', displayName: 'Writer' }] };
@@ -113,5 +113,27 @@ describe('isLoopbackHost / parsePort', () => {
   it('validates ports', () => {
     expect(parsePort('9600', 'x')).toBe(9600);
     for (const p of ['0', '70000', 'abc', '96.5', 1.5]) expect(() => parsePort(p, 'x')).toThrow(ConfigError);
+  });
+});
+
+describe('mode from the command line', () => {
+  it('reads --mode and rejects anything else', () => {
+    expect(modeFromArgs([])).toBeUndefined();
+    expect(modeFromArgs(['--mode=real'])).toBe('real');
+    expect(modeFromArgs(['--mode=demo'])).toBe('demo');
+    expect(() => modeFromArgs(['--mode=prod'])).toThrow(ConfigError);
+    expect(() => modeFromArgs(['--real'])).toThrow(ConfigError);
+  });
+
+  it('wins over MODE in the environment', () => {
+    expect(loadConfig({ rootDir: dir, env: { MODE: 'demo' }, mode: 'real' }).mode).toBe('real');
+    expect(loadConfig({ rootDir: dir, env: { MODE: 'real' }, mode: 'demo' }).mode).toBe('demo');
+    expect(loadConfig({ rootDir: dir, env: { MODE: 'real' } }).mode).toBe('real');
+  });
+
+  it('lets real mode from the command line skip agents in config.local.json', () => {
+    writeFileSync(join(dir, 'config.local.json'), JSON.stringify({ port: 9700 }));
+    expect(() => loadConfig({ rootDir: dir, env: {} })).toThrow(ConfigError);
+    expect(loadConfig({ rootDir: dir, env: {}, mode: 'real' }).overrides).toEqual([]);
   });
 });

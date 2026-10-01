@@ -110,19 +110,37 @@ function readConfigFile(path: string, label: string, agentsOptional: boolean): F
 export interface LoadOptions {
   env?: NodeJS.ProcessEnv;
   rootDir: string;
+  /** Mode from the command line (`--mode=`); wins over MODE in the environment. */
+  mode?: Mode;
+}
+
+/** Read `--mode=demo|real` from the command-line arguments; other arguments are rejected. */
+export function modeFromArgs(args: readonly string[]): Mode | undefined {
+  let mode: Mode | undefined;
+  for (const arg of args) {
+    const value = /^--mode=(.*)$/.exec(arg)?.[1];
+    if (value === undefined) throw new ConfigError(`unknown argument "${arg}" (expected --mode=demo or --mode=real)`);
+    if (value !== 'demo' && value !== 'real') throw new ConfigError('--mode must be "demo" or "real"');
+    mode = value;
+  }
+  return mode;
 }
 
 /**
- * Resolution order: environment (HOST, PORT, MODE) > config.local.json >
- * config.example.json > built-in defaults. config.local.json is git-ignored.
+ * Resolution order: command line (--mode) > environment (HOST, PORT, MODE) >
+ * config.local.json > config.example.json > built-in defaults.
+ * config.local.json is git-ignored.
  */
-export function loadConfig({ env = process.env, rootDir }: LoadOptions): ServerConfig {
+export function loadConfig({ env = process.env, rootDir, mode: argMode }: LoadOptions): ServerConfig {
+  const modeRaw = argMode ?? (env.MODE?.trim() || 'demo');
+  if (modeRaw !== 'demo' && modeRaw !== 'real') throw new ConfigError(`MODE must be "demo" or "real"`);
+
   const localPath = resolve(rootDir, 'config.local.json');
   const examplePath = resolve(rootDir, 'config.example.json');
   const useLocal = existsSync(localPath);
   const label = useLocal ? 'config.local.json' : 'config.example.json';
   // In real mode profiles are discovered, so the local file may leave agents out.
-  const realMode = env.MODE?.trim() === 'real';
+  const realMode = modeRaw === 'real';
   const file = readConfigFile(useLocal ? localPath : examplePath, label, useLocal && realMode);
 
   const host = env.HOST?.trim() || DEFAULT_HOST;
@@ -133,9 +151,6 @@ export function loadConfig({ env = process.env, rootDir }: LoadOptions): ServerC
   }
 
   const port = env.PORT ? parsePort(env.PORT, 'PORT') : (file.port ?? DEFAULT_PORT);
-
-  const modeRaw = env.MODE?.trim() || 'demo';
-  if (modeRaw !== 'demo' && modeRaw !== 'real') throw new ConfigError(`MODE must be "demo" or "real"`);
 
   const hermesBin = env.HERMES_BIN?.trim() || 'hermes';
   if (hermesBin !== 'hermes' && !isAbsolute(hermesBin)) {

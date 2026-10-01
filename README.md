@@ -22,20 +22,21 @@ that reads Hermes through its CLI. A small personal project; expect rough edges.
 
 ```sh
 npm install
+npm start          # build the UI, then read Hermes (real mode) on http://127.0.0.1:9600
 ```
 
-**Development** (two terminals):
+`npm start` rebuilds the UI every time, so after a `git pull` a restart is
+all it takes to see the new version. Without Hermes, try it with fake data:
 
 ```sh
-npm run server     # API + demo data on http://127.0.0.1:9600
+npm run demo       # same, with demo data instead of Hermes
+```
+
+**Development** (two terminals, only needed to work on the code):
+
+```sh
+npm run server     # API on http://127.0.0.1:9600 (demo data; add -- --mode=real for Hermes)
 npm run dev        # UI with hot reload on http://127.0.0.1:5173 (proxies to the server)
-```
-
-**Run it like a real install** (one port):
-
-```sh
-npm run build
-npm start          # UI + API on http://127.0.0.1:9600
 ```
 
 In the browser: drag to orbit (limited range), scroll to zoom. Panning is disabled.
@@ -60,6 +61,8 @@ Other scripts:
 
 | Command             | What it does                        |
 |---------------------|-------------------------------------|
+| `npm start`         | Build the UI and run in real mode   |
+| `npm run demo`      | Build the UI and run with demo data |
 | `npm run build`     | Typecheck and build to `dist/`      |
 | `npm run typecheck` | TypeScript check only               |
 | `npm test`          | Run unit tests (Vitest)             |
@@ -80,8 +83,7 @@ through an SSH tunnel:
 ```sh
 # On the server
 npm install
-npm run build
-MODE=real npm start
+npm start
 
 # On your laptop
 ssh -L 9600:localhost:9600 user@your-server
@@ -106,15 +108,14 @@ Both `config.local.json` and `.env` are git-ignored. Without
 The office is laid out for however many agents there are: one desk and one
 bed each, up to six desks per row, and the room grows to fit.
 
-`MODE=demo` (default) shows fake data and never touches Hermes.
+**Real mode** (`npm start`) reads your Hermes profiles through the CLI,
+read-only, every 10 seconds. Set `HERMES_BIN` to an absolute path if `hermes`
+is not on the server's `PATH`.
 
-`MODE=real` reads your Hermes profiles through the CLI, read-only, every 10
-seconds. Set `HERMES_BIN` to an absolute path if `hermes` is not on the
-server's `PATH`.
+**Demo mode** (`npm run demo`) shows fake data and never touches Hermes.
 
-```sh
-MODE=real npm start
-```
+`npm run server` uses `MODE` from the environment or `.env` (default `demo`);
+`--mode=real` or `--mode=demo` on the command line wins over it.
 
 Profiles are discovered with `hermes profile list`, so `config.local.json` is
 optional in real mode. When present, it only renames, reorders, or hides

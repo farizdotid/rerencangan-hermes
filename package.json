@@ -11,7 +11,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "server": "tsx watch --clear-screen=false server/index.ts",
-    "start": "tsx server/index.ts",
+    "start": "vite build && tsx server/index.ts --mode=real",
+    "demo": "vite build && tsx server/index.ts --mode=demo",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

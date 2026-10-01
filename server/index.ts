@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createApp } from './app';
-import { ConfigError, loadConfig } from './config';
+import { ConfigError, loadConfig, modeFromArgs } from './config';
 import { DemoSource } from './demo';
 import type { StatusSource } from './source';
 import { CLI_SYNTAX_VERIFIED } from './sources/allowlist';
@@ -21,7 +21,8 @@ if (existsSync(envFile)) process.loadEnvFile(envFile);
 
 let config;
 try {
-  config = loadConfig({ rootDir });
+  const mode = modeFromArgs(process.argv.slice(2));
+  config = loadConfig(mode === undefined ? { rootDir } : { rootDir, mode });
 } catch (err) {
   if (err instanceof ConfigError) fail(err.message);
   throw err;
