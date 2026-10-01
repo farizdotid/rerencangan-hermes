@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { FLOOR_TILE_SIZE, createFloorTexture } from './floorTexture';
 import type { RoomSpec } from './layout';
 import { PALETTE } from './palette';
+import { createWainscot } from './wallDecor';
 
 const FLOOR_THICKNESS = 0.2;
 const TRIM_HEIGHT = 0.12;
@@ -11,7 +12,7 @@ export interface RoomOptions {
   anisotropy?: number;
 }
 
-/** Wooden floor plus two cutaway walls on the back edges (min X and min Z). */
+/** Wooden floor plus two painted, panelled cutaway walls on the back edges (min X and min Z). */
 export function createRoom(room: RoomSpec, opts: RoomOptions = {}): THREE.Group {
   const group = new THREE.Group();
   group.name = 'room';
@@ -66,5 +67,6 @@ export function createRoom(room: RoomSpec, opts: RoomOptions = {}): THREE.Group 
   sideTrim.position.set(side.position.x, trimY, 0);
 
   group.add(back, side, backTrim, sideTrim);
+  group.add(createWainscot(room, opts.anisotropy));
   return group;
 }

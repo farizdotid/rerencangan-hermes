@@ -3,8 +3,10 @@ import { createBed, createBedKit, type Bed } from './bed';
 import { createDesk, createDeskKit, type Desk } from './desk';
 import type { OfficeLayout, Point } from './layout';
 import { createLights } from './lights';
+import { nightFactor } from './daylight';
 import { createRoom } from './room';
 import { ServerRack } from './serverRack';
+import { createDecor } from './wallDecor';
 
 export interface Office {
   root: THREE.Group;
@@ -41,6 +43,11 @@ export function buildOffice(layout: OfficeLayout, opts: OfficeOptions = {}): Off
   const rack = new ServerRack(layout.serverRack);
   root.add(rack.group);
 
+  const decor = layout.decor ? createDecor(layout.decor, layout.room) : null;
+  if (decor) root.add(decor.group);
+  // Window skies follow the viewer's clock; checking a few times a minute is plenty.
+  let nextSkyCheck = -Infinity;
+
   return {
     root,
     desks,
@@ -49,6 +56,10 @@ export function buildOffice(layout: OfficeLayout, opts: OfficeOptions = {}): Off
     rack,
     update(timeSeconds) {
       rack.update(timeSeconds);
+      if (decor && timeSeconds >= nextSkyCheck) {
+        decor.windows.setNight(nightFactor(new Date()));
+        nextSkyCheck = timeSeconds + 10;
+      }
     },
     dispose() {
       root.removeFromParent();
