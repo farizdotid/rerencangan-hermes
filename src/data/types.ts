@@ -1,4 +1,4 @@
-/** Visual state of one agent (PRD section 8: data contract). */
+/** Visual state of one agent; part of the snapshot data contract below. */
 export const AGENT_STATES = ['idle', 'working', 'error', 'celebrating', 'offline'] as const;
 
 export type AgentState = (typeof AGENT_STATES)[number];

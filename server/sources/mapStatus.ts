@@ -1,6 +1,6 @@
 import type { AgentStatus, RunStatus } from '../../src/data/types';
 
-/** A failed run this recent shows the agent in `error` (PRD section 8, rule 2). */
+/** A failed run this recent shows the agent in `error` (rule 2 below). */
 export const ERROR_WINDOW_MS = 30 * 60 * 1000;
 /** A successful run this recent shows the agent `celebrating` (rule 4). */
 export const CELEBRATE_WINDOW_MS = 2 * 60 * 1000;
@@ -30,7 +30,7 @@ function withinWindow(at: string, now: number, windowMs: number): boolean {
 }
 
 /**
- * Applies the state rules in priority order (PRD section 8):
+ * Applies the state rules in priority order:
  * 1. gateway not running -> offline
  * 2. a failure in the last 30 minutes -> error
  * 3. a running execution or active session -> working

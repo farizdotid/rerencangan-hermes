@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AllowlistError, COMMANDS, buildArgs, type CommandKey } from '../server/sources/allowlist';
 
 describe('allowlist', () => {
-  it('contains only the read-only commands from the PRD', () => {
+  it('contains only the read-only commands this app needs', () => {
     expect(Object.values(COMMANDS).map((c) => c.args.join(' '))).toEqual([
       'profile list',
       'cron status',

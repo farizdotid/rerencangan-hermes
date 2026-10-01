@@ -1,4 +1,4 @@
-/** Upper bound for renderer pixel ratio (PRD section 8: performance). */
+/** Upper bound for renderer pixel ratio, so high-DPI screens do not overload the GPU. */
 export const MAX_PIXEL_RATIO = 2;
 
 /** Clamp a device pixel ratio to a sane range for rendering. */

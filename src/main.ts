@@ -200,7 +200,7 @@ function onResize(): void {
   renderer.setSize(w, h);
 }
 
-// Stop rendering while the tab is hidden (PRD section 8: performance).
+// Stop rendering while the tab is hidden, to save battery and GPU.
 function onVisibilityChange(): void {
   if (document.hidden) {
     renderer.setAnimationLoop(null);

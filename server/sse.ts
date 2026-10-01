@@ -1,7 +1,7 @@
 import type { ServerResponse } from 'node:http';
 
 export interface SseOptions {
-  /** Interval between `ping` events (PRD: 15 s). */
+  /** Interval between `ping` events (15 s by default). */
   heartbeatMs?: number;
   /** Refuse new streams beyond this many, so a runaway tab cannot exhaust the server. */
   maxClients?: number;
