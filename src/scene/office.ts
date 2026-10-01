@@ -17,13 +17,18 @@ export interface Office {
   dispose(): void;
 }
 
+export interface OfficeOptions {
+  /** Max anisotropic filtering to use for textures (from the renderer). */
+  anisotropy?: number;
+}
+
 /** Build the whole static office from a layout. */
-export function buildOffice(layout: OfficeLayout): Office {
+export function buildOffice(layout: OfficeLayout, opts: OfficeOptions = {}): Office {
   const root = new THREE.Group();
   root.name = 'office';
 
   root.add(createLights(layout.room));
-  root.add(createRoom(layout.room));
+  root.add(createRoom(layout.room, opts.anisotropy === undefined ? {} : { anisotropy: opts.anisotropy }));
 
   const kit = createDeskKit();
   const desks = layout.desks.map((slot) => createDesk(slot, kit));

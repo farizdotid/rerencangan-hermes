@@ -1,12 +1,18 @@
 import * as THREE from 'three';
+import { FLOOR_TILE_SIZE, createFloorTexture } from './floorTexture';
 import type { RoomSpec } from './layout';
 import { PALETTE } from './palette';
 
 const FLOOR_THICKNESS = 0.2;
 const TRIM_HEIGHT = 0.12;
 
-/** Floor plus two cutaway walls on the back edges (min X and min Z). */
-export function createRoom(room: RoomSpec): THREE.Group {
+export interface RoomOptions {
+  /** Anisotropic filtering for the floor texture; keeps it sharp at the iso angle. */
+  anisotropy?: number;
+}
+
+/** Wooden floor plus two cutaway walls on the back edges (min X and min Z). */
+export function createRoom(room: RoomSpec, opts: RoomOptions = {}): THREE.Group {
   const group = new THREE.Group();
   group.name = 'room';
 
@@ -14,10 +20,21 @@ export function createRoom(room: RoomSpec): THREE.Group {
   const halfD = room.depth / 2;
   const t = room.wallThickness;
 
-  const floor = new THREE.Mesh(
-    new THREE.BoxGeometry(room.width, FLOOR_THICKNESS, room.depth),
-    new THREE.MeshStandardMaterial({ color: PALETTE.floor, roughness: 0.9 }),
-  );
+  // Parquet on top, plain edges on the sides (box faces: +x, -x, +y, -y, +z, -z).
+  const parquet = createFloorTexture(opts.anisotropy);
+  parquet?.repeat.set(room.width / FLOOR_TILE_SIZE, room.depth / FLOOR_TILE_SIZE);
+  const top = parquet
+    ? new THREE.MeshStandardMaterial({ map: parquet, roughness: 0.75 })
+    : new THREE.MeshStandardMaterial({ color: PALETTE.floorWood, roughness: 0.75 });
+  const edge = new THREE.MeshStandardMaterial({ color: PALETTE.floorSeam, roughness: 0.9 });
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(room.width, FLOOR_THICKNESS, room.depth), [
+    edge,
+    edge,
+    top,
+    edge,
+    edge,
+    edge,
+  ]);
   floor.position.y = -FLOOR_THICKNESS / 2;
   floor.receiveShadow = true;
   floor.name = 'floor';

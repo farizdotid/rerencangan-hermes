@@ -1,7 +1,6 @@
 /** Soft, bright palette with a blue accent. */
 export const PALETTE = {
   background: 0xeef3fb,
-  floor: 0xd8dfea,
   floorEdge: 0xc9d2df,
   floorWood: 0xbe9670,
   floorSeam: 0x9c7a58,
