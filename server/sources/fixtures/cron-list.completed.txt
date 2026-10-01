@@ -1,0 +1,15 @@
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         Scheduled Jobs (profile: default)               │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  b2c3d4e5f6a1 [active]
+    Name:      Daily article job
+    Schedule:  every day at 23:00
+    Repeat:    ∞
+    Next run:  2026-10-01T23:00:00+07:00
+    Deliver:   local
+    Last run:  2026-10-01T00:40:00.123456+07:00  ok
+    Dispatch:  on time (scheduled 2026-09-30T23:00:00+07:00)
+    Execution: completed  fedcba9876543210fedcba9876543210
+

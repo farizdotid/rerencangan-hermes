@@ -9,7 +9,11 @@ or session content.
 |------|--------|---------|
 | `cron-status.running.txt` | PRD appendix A (sanitized) | `hermes cron status`, gateway running |
 | `cron-list.running.txt` | PRD appendix A (sanitized) | `hermes cron list`, one job executing |
+| `cron-list.completed.txt` | Real machine (sanitized) | `hermes cron list`, last run finished ok |
+| `profile-list.txt` | Real machine (sanitized) | `hermes profile list`, four profiles |
+| `sessions-list.txt` | Real machine (sanitized; titles replaced) | `hermes sessions list` |
 
-Still needed from a real machine (sanitized): `cron list` with a finished job,
-a failed job, and an OVERDUE job; `cron status` with the gateway stopped;
-`sessions list` for each profile.
+Still needed from a real machine (sanitized): `cron list` with a failed job
+and an OVERDUE job, and for a profile without jobs; `cron status` with the
+gateway stopped; `profile list` with a stopped gateway; `sessions list` while
+a session is active.

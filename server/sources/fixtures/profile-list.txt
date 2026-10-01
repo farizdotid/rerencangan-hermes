@@ -1,0 +1,8 @@
+
+ Profile          Model                        Gateway      Alias        Distribution
+ ───────────────    ───────────────────────────    ───────────    ───────────    ────────────────────
+ ◆default         provider/model-a             running      —            —
+  writer          provider/model-a             running      writer       —
+  research        provider/model-a             running      research     —
+  planner         provider/model-a             running      planner      —
+
