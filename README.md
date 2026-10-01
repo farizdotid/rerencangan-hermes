@@ -82,6 +82,9 @@ Private settings never go into git.
 Both `config.local.json` and `.env` are git-ignored. Without
 `config.local.json`, the generic profiles from `config.example.json` are used.
 
+The office is laid out for however many agents there are: one desk and one
+bed each, up to six desks per row, and the room grows to fit.
+
 `MODE=demo` (default) shows fake data and never touches Hermes.
 
 `MODE=real` polls the Hermes CLI every 7 seconds, read-only. It is **locked**
