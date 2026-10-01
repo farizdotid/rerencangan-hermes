@@ -52,10 +52,11 @@ export function buildOffice(layout: OfficeLayout): Office {
   };
 }
 
-/** Dispose every geometry and material under `root` exactly once. */
+/** Dispose every geometry, material, and material texture under `root` exactly once. */
 export function disposeTree(root: THREE.Object3D): void {
   const geometries = new Set<THREE.BufferGeometry>();
   const materials = new Set<THREE.Material>();
+  const textures = new Set<THREE.Texture>();
   root.traverse((obj) => {
     if (obj instanceof THREE.InstancedMesh) obj.dispose();
     if (obj instanceof THREE.Mesh) {
@@ -65,6 +66,11 @@ export function disposeTree(root: THREE.Object3D): void {
     }
     if (obj instanceof THREE.DirectionalLight) obj.shadow.dispose();
   });
+  for (const m of materials) {
+    // Material.dispose() leaves its textures on the GPU, so free them explicitly.
+    for (const value of Object.values(m)) if (value instanceof THREE.Texture) textures.add(value);
+  }
   for (const g of geometries) g.dispose();
   for (const m of materials) m.dispose();
+  for (const t of textures) t.dispose();
 }

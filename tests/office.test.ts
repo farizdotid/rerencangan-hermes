@@ -71,3 +71,14 @@ describe('disposeTree', () => {
     expect(office.root.parent).toBeNull();
   });
 });
+
+describe('disposeTree textures', () => {
+  it('also disposes textures used by materials', () => {
+    const texture = new THREE.Texture();
+    const root = new THREE.Group();
+    root.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ map: texture })));
+    const spy = vi.spyOn(texture, 'dispose');
+    disposeTree(root);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+});
