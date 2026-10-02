@@ -30,6 +30,14 @@ export const PALETTE = {
   mattress: 0xf4f6fa,
   pillow: 0xffffff,
   blanket: 0x9dbbea,
+  bedroomWall: 0xdfe5f2,
+  carpet: 0xcbbcae,
+  carpetFleck: 0xb8a898,
+  wardrobe: 0xe8dac4,
+  knob: 0xa98260,
+  lampBase: 0x8e98a9,
+  lampShade: 0xffe2b0,
+  lampGlow: 0xffbf66,
 } as const;
 
 /** Soft body colors assigned to agents in order. */

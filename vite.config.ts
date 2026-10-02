@@ -18,6 +18,11 @@ export default defineConfig(({ mode }) => {
     preview: {
       host: '127.0.0.1',
     },
+    build: {
+      // three.js is most of the ~620 kB bundle and cannot be split below 500 kB,
+      // so warn only if the bundle grows well past that.
+      chunkSizeWarningLimit: 800,
+    },
     test: {
       include: ['tests/**/*.test.ts'],
       environment: 'node',

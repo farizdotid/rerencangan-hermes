@@ -18,6 +18,14 @@ describe('buildOffice', () => {
     office.dispose();
   });
 
+  it('builds the bedroom: carpet, partition, a bedside table per bed, and a wardrobe', () => {
+    const office = buildOffice(DEFAULT_LAYOUT);
+    const bedroom = office.root.getObjectByName('bedroom')!;
+    for (const name of ['carpet', 'bedroom-paint', 'partition', 'wardrobe']) expect(bedroom.getObjectByName(name), name).toBeDefined();
+    for (const stand of DEFAULT_LAYOUT.bedroom!.nightstands) expect(bedroom.getObjectByName(stand.id), stand.id).toBeDefined();
+    office.dispose();
+  });
+
   it('places desks at their slot positions', () => {
     const office = buildOffice(DEFAULT_LAYOUT);
     for (const desk of office.desks) {

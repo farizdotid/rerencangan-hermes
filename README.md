@@ -50,8 +50,9 @@ In the browser: drag to orbit (limited range), scroll to zoom. Panning is disabl
   job count. Close with ×, Esc, or a click on empty space.
 - **Server rack LEDs:** green when the gateway runs, red when it is stopped,
   amber when there is no fresh data.
-- **Naps:** an agent that stays idle for 3 minutes walks to its bed and
-  sleeps; it walks back to its desk as soon as a job runs, fails, or finishes.
+- **Naps:** an agent that stays idle for 3 minutes walks through the doorway
+  to its bed in the bedroom and sleeps; it walks back to its desk as soon as a
+  job runs, fails, or finishes. The bedside lamps glow brighter at night.
 
 In dev mode a small FPS counter shows in the top-left corner, and keys
 `1`–`5` force every agent into `idle`, `working`, `error`, `celebrating`, or
@@ -105,8 +106,9 @@ Private settings never go into git.
 Both `config.local.json` and `.env` are git-ignored. Without
 `config.local.json`, the generic profiles from `config.example.json` are used.
 
-The office is laid out for however many agents there are: one desk and one
-bed each, up to six desks per row, and the room grows to fit.
+The office is laid out for however many agents there are: a work area with
+one desk each (up to six per row) and, behind a low wall with a doorway, a
+bedroom with one bed each. The room grows to fit.
 
 **Real mode** (`npm start`) reads your Hermes profiles through the CLI,
 read-only, every 10 seconds. Set `HERMES_BIN` to an absolute path if `hermes`
