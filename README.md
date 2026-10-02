@@ -1,5 +1,7 @@
 # Rerencangan Hermes
 
+![Rerencangan Hermes: a 3D virtual office for Hermes Agent](docs/banner.png)
+
 A 3D virtual office (Three.js) that shows the status of your
 Hermes Agent profiles at a glance.
 Each agent is a character: working agents type at their desk, idle ones relax,

@@ -10,5 +10,7 @@ or clearly free to use, and listed here with their license.
 | Wall panelling and window skies (day and night) | Drawn in code on a canvas at startup (`src/scene/wallTextures.ts`) | MIT (this repo) |
 | Windows, shelf, books, plants | Generated in code from Three.js primitives (`src/scene/wallDecor.ts`) | MIT (this repo) |
 | Name labels, "zzz" icon, alarm glow | Drawn in code on a canvas with local system fonts | MIT (this repo) |
+| README banner (`docs/banner.png`) | Made for this project by the owner | MIT (this repo) |
 
-No image files, external fonts, sounds, or 3D model files are shipped or downloaded.
+The app ships no image files, external fonts, sounds, or 3D model files and downloads none.
+The README banner lives in `docs/` and is not part of the app.
